@@ -1,0 +1,341 @@
+-- =============================================================================
+-- منصة العناية بالشعر والبشرة — PostgreSQL Database Schema for Supabase
+-- Phase 1 (E-Commerce Store) + Prepared Phase 2 (Centers & Home Services)
+-- =============================================================================
+
+-- Enable UUID extension
+create extension if not exists "uuid-ossp";
+
+-- =============================================================================
+-- 1. ENUMS
+-- =============================================================================
+create type user_role as enum ('customer', 'admin');
+create type discount_type as enum ('percentage', 'fixed');
+create type order_status as enum ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled');
+create type payment_status as enum ('unpaid', 'paid', 'refunded');
+create type provider_type as enum ('freelancer', 'center');
+create type provider_status as enum ('pending', 'verified', 'trusted', 'suspended');
+create type booking_status as enum ('requested', 'offered', 'confirmed', 'in_progress', 'completed', 'cancelled', 'reported');
+create type payout_status as enum ('pending', 'paid');
+create type points_source as enum ('order', 'booking', 'redemption', 'manual');
+
+-- =============================================================================
+-- 2. CORE TABLES (PHASE 1 - STORE)
+-- =============================================================================
+
+-- PROFILES (Linked to Supabase auth.users)
+create table if not exists profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  phone text,
+  role user_role not null default 'customer',
+  avatar_url text,
+  lat double precision,
+  lng double precision,
+  address_line text,
+  city text,
+  loyalty_points int not null default 0 check (loyalty_points >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Auto-create profile trigger on auth.user creation
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, role)
+  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', 'مستخدم جديد'), 'customer');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- CATEGORIES (Hierarchical: Hair Care, Skin Care, Moisturizers, Treatments...)
+create table if not exists categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  name_en text,
+  slug text not null unique,
+  description text,
+  image_url text,
+  parent_category_id uuid references categories(id) on delete set null,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- PRODUCTS
+create table if not exists products (
+  id uuid primary key default gen_random_uuid(),
+  category_id uuid references categories(id) on delete set null,
+  name text not null,
+  name_en text,
+  slug text not null unique,
+  description text,
+  ingredients text,
+  how_to_use text,
+  brand text,
+  price numeric(10,2) not null check (price >= 0),
+  discount_price numeric(10,2) check (discount_price >= 0),
+  stock_quantity int not null default 0 check (stock_quantity >= 0),
+  sku text unique,
+  is_active boolean not null default true,
+  is_featured boolean not null default false,
+  rating_avg numeric(3,2) default 5.0,
+  reviews_count int default 0,
+  main_image text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- PRODUCT IMAGES
+create table if not exists product_images (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  storage_path text not null,
+  sort_order int not null default 0
+);
+
+-- CART ITEMS
+create table if not exists cart_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  product_id uuid not null references products(id) on delete cascade,
+  quantity int not null check (quantity > 0),
+  created_at timestamptz not null default now(),
+  unique (user_id, product_id)
+);
+
+-- COUPONS
+create table if not exists coupons (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  discount_type discount_type not null default 'percentage',
+  value numeric(10,2) not null check (value > 0),
+  min_order_amount numeric(10,2) default 0,
+  max_discount_amount numeric(10,2),
+  expiry_date date,
+  usage_limit int,
+  times_used int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- ORDERS
+create table if not exists orders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id),
+  coupon_id uuid references coupons(id),
+  status order_status not null default 'pending',
+  payment_status payment_status not null default 'unpaid',
+  payment_method text not null default 'cash_on_delivery',
+  shipping_full_name text not null,
+  shipping_phone text not null,
+  shipping_address text not null,
+  shipping_city text not null default 'القاهرة',
+  shipping_lat double precision,
+  shipping_lng double precision,
+  subtotal numeric(10,2) not null,
+  discount_amount numeric(10,2) not null default 0,
+  shipping_fee numeric(10,2) not null default 0,
+  total_price numeric(10,2) not null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ORDER ITEMS
+create table if not exists order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete cascade,
+  product_id uuid not null references products(id),
+  quantity int not null check (quantity > 0),
+  price_at_purchase numeric(10,2) not null
+);
+
+-- REVIEWS
+create table if not exists reviews (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  rating int not null check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz not null default now(),
+  unique (product_id, user_id)
+);
+
+-- LOYALTY POINTS LOG
+create table if not exists loyalty_points_log (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  points int not null,
+  source points_source not null,
+  reference_id uuid,
+  created_at timestamptz not null default now()
+);
+
+-- =============================================================================
+-- 3. PHASE 2 TABLES (PREPARED: PROVIDERS, BOOKINGS, COMMISSIONS)
+-- =============================================================================
+
+-- PROVIDERS (Freelancers & Beauty Centers)
+create table if not exists providers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id),
+  type provider_type not null default 'freelancer',
+  status provider_status not null default 'pending',
+  display_name text not null,
+  bio text,
+  specialties text[] default '{}',
+  lat double precision,
+  lng double precision,
+  rating_avg numeric(3,2) default 0,
+  rating_count int default 0,
+  is_available boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- BOOKINGS
+create table if not exists bookings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id),
+  provider_id uuid references providers(id),
+  service_type text not null,
+  status booking_status not null default 'requested',
+  requested_area text,
+  scheduled_at timestamptz,
+  agreed_price numeric(10,2),
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- COMMISSIONS
+create table if not exists commissions (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references bookings(id) on delete cascade,
+  session_value numeric(10,2) not null,
+  commission_rate numeric(5,2) not null, -- e.g. 15.00 for 15%
+  commission_amount numeric(10,2) not null,
+  payout_status payout_status not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
+-- =============================================================================
+-- 4. GEO-DISTANCE & PROVIDER MATCHING FUNCTION
+-- =============================================================================
+create or replace function suggest_providers_for_booking(
+  p_service_type text,
+  p_lat double precision,
+  p_lng double precision,
+  p_max_distance_km numeric default 25
+)
+returns table (
+  provider_id uuid,
+  display_name text,
+  rating_avg numeric,
+  distance_km numeric
+)
+language sql stable as $$
+  select id, display_name, rating_avg, distance_km
+  from (
+    select
+      p.id,
+      p.display_name,
+      p.rating_avg,
+      (6371 * acos(
+        cos(radians(p_lat)) * cos(radians(p.lat)) *
+        cos(radians(p.lng) - radians(p_lng)) +
+        sin(radians(p_lat)) * sin(radians(p.lat))
+      )) as distance_km
+    from providers p
+    where p.status in ('verified', 'trusted')
+      and p_service_type = any(p.specialties)
+  ) candidates
+  where distance_km <= p_max_distance_km
+  order by rating_avg desc, distance_km asc
+  limit 10;
+$$;
+
+-- =============================================================================
+-- 5. ROW LEVEL SECURITY (RLS) POLICIES
+-- =============================================================================
+
+alter table profiles enable row level security;
+alter table categories enable row level security;
+alter table products enable row level security;
+alter table product_images enable row level security;
+alter table cart_items enable row level security;
+alter table coupons enable row level security;
+alter table orders enable row level security;
+alter table order_items enable row level security;
+alter table reviews enable row level security;
+alter table loyalty_points_log enable row level security;
+alter table providers enable row level security;
+alter table bookings enable row level security;
+alter table commissions enable row level security;
+
+-- Profiles: Users see/edit own profile, admins can read all
+create policy "profiles_select_own" on profiles for select using (
+  auth.uid() = id or exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "profiles_update_own" on profiles for update using (auth.uid() = id);
+
+-- Categories & Products: Public Read, Admin Write
+create policy "categories_read_public" on categories for select using (true);
+create policy "categories_admin_all" on categories for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+create policy "products_read_public" on products for select using (true);
+create policy "products_admin_all" on products for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+create policy "product_images_read_public" on product_images for select using (true);
+create policy "product_images_admin_all" on product_images for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+-- Cart: User only
+create policy "cart_items_all_own" on cart_items for all using (auth.uid() = user_id);
+
+-- Coupons: Public read active coupons, admin manage
+create policy "coupons_read_active" on coupons for select using (is_active = true);
+create policy "coupons_admin_all" on coupons for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+-- Orders & Order Items
+create policy "orders_select_own_or_admin" on orders for select using (
+  auth.uid() = user_id or exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "orders_insert_own" on orders for insert with check (auth.uid() = user_id);
+create policy "orders_admin_update" on orders for update using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+create policy "order_items_select" on order_items for select using (
+  exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'admin')))
+);
+create policy "order_items_insert" on order_items for insert with check (
+  exists (select 1 from orders where orders.id = order_items.order_id and orders.user_id = auth.uid())
+);
+
+-- Reviews: Public Read, Authenticated Insert
+create policy "reviews_read_public" on reviews for select using (true);
+create policy "reviews_insert_own" on reviews for insert with check (auth.uid() = user_id);
+create policy "reviews_update_own" on reviews for update using (auth.uid() = user_id);
+
+-- Loyalty Points Log
+create policy "loyalty_log_select_own" on loyalty_points_log for select using (
+  auth.uid() = user_id or exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+-- Storage Buckets Setup Note:
+-- Bucket 'product-images' (public)
+-- Bucket 'provider-documents' (private, admin only)

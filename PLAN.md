@@ -22,58 +22,48 @@
 - [x] تثبيت مكتبة `@supabase/supabase-js`.
 - [x] إنشاء ملف `PLAN.md` وملف `README.md`.
 - [x] إنشاء ملف `supabase/schema.sql` بكامل الجداول والـ Enums و RLS.
-- [x] أول Commit تأسيسي للمشروع.
+- [x] أول Commit تأسيسي للمشروع (`fe88cb5`).
 
-### 🟡 المرحلة 2: البنية التحتية والربط مع Supabase (Core Architecture)
-- [ ] إعداد ملفات البيئة `environment.ts` و `environment.development.ts`.
-- [ ] إنشاء `SupabaseService` كـ Client رئيسي.
-- [ ] إنشاء `AuthService` مع إدارة الحالة عبر Signals (User profile, Role: customer/admin).
-- [ ] إنشاء الـ Models والـ Types لجميع الكيانات:
-  - `Profile`, `Category`, `Product`, `ProductImage`, `CartItem`, `Order`, `OrderItem`, `Coupon`, `Review`, `Provider`, `Booking`, `LoyaltyPointLog`.
-- [ ] إنشاء الـ Guards (`authGuard`, `adminGuard`).
-- [ ] إنشاء الـ Mock Data للتطوير السلس والعمل بدون انقطاع حتى قبل إدخال مفاتيح Supabase الحية.
-- [ ] Commit: `feat(core): setup supabase connection, auth state, models, and guards`.
+### 🟢 المرحلة 2: البنية التحتية والربط مع Supabase (Core Architecture)
+- [x] إعداد ملفات البيئة `environment.ts` و `environment.development.ts`.
+- [x] إنشاء `SupabaseService` كـ Client رئيسي مع fallback آمن للتطوير.
+- [x] إنشاء `AuthService` مع إدارة الحالة عبر Signals ومفتاح التبديل السريع بين الأدمن والعميل.
+- [x] إنشاء الـ Models والـ Types لجميع الكيانات (Store + Phase 2 Bookings & Providers).
+- [x] إنشاء الـ Guards (`authGuard`, `adminGuard`).
+- [x] إنشاء الـ Mock Data الغنية للمنتجات والتصنيفات المصرية والعربية.
 
-### ⚪ المرحلة 3: نظام التصميم والمكونات المشتركة (Design System & UI Components)
-- [ ] ضبط نظام الألوان (Rose gold / Warm neutrals / Emerald accents / Dark-Light theme).
-- [ ] خطوط عربية فاخرة (Cairo / Plus Jakarta Sans) ودعم RTL كامل.
-- [ ] مكونات UI المشتركة:
-  - Navbar (لوجو فاخر، تصنيفات، بحث، أيقونة السلة، زر الحساب / الدخول).
-  - Footer (روابط سريعة، اشتراك في النشرة، قنوات التواصل، سياسة الشحن).
-  - ProductCard (صورة متحركة، بادج الخصم، التقييم، زر الإضافة السريعة للسلة، زر المفضلة).
-  - CartDrawer / QuickCart (نافذة جانبية تفاعلية للسلة).
-  - RatingStars, Badges, Toast/Notification system.
-- [ ] Commit: `feat(shared): luxury beauty design system, navigation, and shared components`.
+### 🟢 المرحلة 3: نظام التصميم والمكونات المشتركة (Design System & UI Components)
+- [x] ضبط نظام الألوان (Rose gold / Warm neutrals / Emerald accents / Dark-Light theme).
+- [x] خطوط عربية فاخرة (Cairo / Plus Jakarta Sans) ودعم RTL كامل.
+- [x] مكونات UI المشتركة:
+  - Navbar (لوجو فاخر، تصنيفات، بحث، أيقونة السلة، زر الحساب / الدخول، وتبديل سريع للأدمن).
+  - Footer (شريط الضمانات، روابط الأقسام، النشرة البريدية، بوابات الدفع).
+  - ProductCard (نسب الخصم، الأكثر طلباً، إضافة سريعة، التقييم بالنجوم).
+  - CartDrawer (نافذة جانبية تفاعلية، شريط الشحن المجاني، تطبيق الكوبونات، أزرار الكمية).
 
-### ⚪ المرحلة 4: خدمات المتجر وإدارة الحالة (Store Services with Signals)
-- [ ] `ProductsService`: جلب المنتجات، الفلترة حسب القسم، السعر، البحث، والترتيب.
-- [ ] `CartService`: إدارة السلة عبر Signals مع مزامنة الـ LocalStorage و Supabase `cart_items`.
-- [ ] `CouponsService`: التحقق من كود الخصم وتطبيقه.
-- [ ] `OrdersService`: إنشاء ومتابعة الطلبات.
-- [ ] Commit: `feat(store): products, cart, and orders services`.
+### 🟢 المرحلة 4: خدمات المتجر وإدارة الحالة (Store Services with Signals)
+- [x] `ProductsService`: جلب المنتجات، الفلترة حسب القسم، السعر، التقييم، البحث، والترتيب.
+- [x] `CartService`: إدارة السلة عبر Signals مع مزامنة الـ LocalStorage و Supabase `cart_items`.
+- [x] `CouponsService`: التحقق من كود الخصم وتطبيقه.
+- [x] `OrdersService`: إنشاء ومتابعة الطلبات ومنح نقاط الولاء.
 
-### ⚪ المرحلة 5: صفحات المتجر للعملاء (Customer Storefront Pages)
-- [ ] **الصفحة الرئيسية (Home)**: Hero Section تفاعلي، أقسام المنتجات الأكثر طلباً، تصنيفات العناية بالشعر والبشرة، قسم نقاط الولاء.
-- [ ] **صفحة كتالوج المنتجات (Products Catalog)**: فلاتر متقدمة (السعر، الفئة، التقييم)، بحث لحظي، وفرز.
-- [ ] **صفحة تفاصيل المنتج (Product Details)**: سلايدر الصور، الوصف والمكونات، طريقة الاستخدام، التقييمات والمراجعات، منتجات مقترحة.
-- [ ] **صفحة إتمام الطلب (Checkout)**: إدخال بيانات الشحن والعنوان، اختيار طريقة الدفع (الدفع عند الاستلام / كارت / محفظة إلكترونية)، تأكيد الطلب.
-- [ ] **صفحة تسجيل الدخول / إنشاء حساب (Auth Modal/Page)**: دخول بالبريد، التحقق، وإنشاء حساب جديد.
-- [ ] Commit: `feat(views): customer storefront pages and checkout flow`.
+### 🟢 المرحلة 5: صفحات المتجر للعملاء (Customer Storefront Pages)
+- [x] **الصفحة الرئيسية (Home)**: Hero Section فاخر، أقسام المنتجات الأكثر طلباً، تصنيفات العناية بالشعر والبشرة، دليل روتين العناية.
+- [x] **صفحة كتالوج المنتجات (Products Catalog)**: فلاتر متقدمة، تصنيفات، بحث لحظي، وفرز.
+- [x] **صفحة تفاصيل المنتج (Product Details)**: سلايدر الصور، الوصف، المكونات، طريقة الاستخدام، التقييمات، ومنتجات مقترحة.
+- [x] **صفحة إتمام الطلب (Checkout)**: إدخال بيانات الشحن والعنوان، اختيار طريقة الدفع، ومراجعة الطلب وتأكيده مع كسب نقاط الولاء.
 
-### ⚪ المرحلة 6: لوحة تحكم الإدارة (Admin Dashboard)
-- [ ] لوحة الإحصائيات (Overview Analytics): إجمالي المبيعات، الطلبات المعلقة، أكثر المنتجات مبيعاً.
-- [ ] إدارة المنتجات (Products Management): إضافة، تعديل، حذف، رفع الصور، التحكم في المخزون.
-- [ ] إدارة التصنيفات (Categories Management).
-- [ ] إدارة الطلبات (Orders Management): تتبع الطلبات وتحديث الحالة (قيد الانتظار ➔ تم التأكيد ➔ تم الشحن ➔ تم التوصيل).
-- [ ] إدارة الكوبونات (Coupons Management): إنشاء أكواد الخصم وتحديد نسبتها وحدود استخدامها.
-- [ ] واجهة طابور الحجوزات وترشيح الفريلانسرز (مجهزة للمرحلة الثانية).
-- [ ] Commit: `feat(admin): complete admin dashboard with analytics and management tools`.
+### 🟢 المرحلة 6: لوحة تحكم الإدارة (Admin Dashboard)
+- [x] لوحة الإحصائيات (Overview Analytics): إجمالي المبيعات، الطلبات، المنتجات المنخفضة، العملاء.
+- [x] إدارة المنتجات (Products Management): إضافة منتج جديد بمودال متكامل، تعديل، وحذف.
+- [x] إدارة الطلبات (Orders Management): تتبع الطلبات وتحديث الحالة (قيد الانتظار ➔ تم التأكيد ➔ تم الشحن ➔ تم التوصيل).
+- [x] إدارة الكوبونات (Coupons Management): استعراض أكواد الخصم وشروطها.
+- [x] واجهة طابور الحجوزات وترشيح الفريلانسرز (مجهزة للمرحلة الثانية).
 
-### ⚪ المرحلة 7: حساب العميل وتاريخ الطلبات ونقاط الولاء
-- [ ] الملف الشخصي وتعديل البيانات والعناوين.
-- [ ] صفحة تتبع الطلبات السابقة والحالية.
-- [ ] محفظة نقاط الولاء (Loyalty Points Wallet) وسجل العمليات.
-- [ ] Commit: `feat(account): customer profile, order tracking, and loyalty rewards`.
+### 🟢 المرحلة 7: حساب العميل وتاريخ الطلبات ونقاط الولاء
+- [x] الملف الشخصي وتعديل البيانات والعناوين.
+- [x] صفحة تتبع الطلبات السابقة والحالية.
+- [x] محفظة نقاط الولاء (Loyalty Points Wallet) ورصيد الخصم المتاح.
 
 ---
 

@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { Profile, UserRole } from '../models';
-import { MOCK_CUSTOMER_PROFILE, MOCK_ADMIN_PROFILE } from '../mock/mock-data';
+import { MOCK_CUSTOMER_PROFILE, MOCK_ADMIN_PROFILE, MOCK_PROVIDER_PROFILE } from '../mock/mock-data';
 
 @Injectable({
   providedIn: 'root'
@@ -22,6 +22,7 @@ export class AuthService {
 
   readonly isAuthenticated = computed(() => !!this._profile());
   readonly isAdmin = computed(() => this._profile()?.role === 'admin');
+  readonly isProvider = computed(() => this._profile()?.role === 'provider');
   readonly userRole = computed<UserRole>(() => this._profile()?.role ?? 'customer');
   readonly loyaltyPoints = computed(() => this._profile()?.loyalty_points ?? 0);
 
@@ -99,12 +100,15 @@ export class AuthService {
       }
     } else {
       // Demo authentication simulation
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 300));
       this._isLoading.set(false);
 
       if (email.includes('admin')) {
         this._profile.set(MOCK_ADMIN_PROFILE);
         localStorage.setItem('beauty_demo_profile', JSON.stringify(MOCK_ADMIN_PROFILE));
+      } else if (email.includes('provider') || email.includes('omneya')) {
+        this._profile.set(MOCK_PROVIDER_PROFILE);
+        localStorage.setItem('beauty_demo_profile', JSON.stringify(MOCK_PROVIDER_PROFILE));
       } else {
         const customProfile: Profile = {
           ...MOCK_CUSTOMER_PROFILE,
@@ -117,7 +121,7 @@ export class AuthService {
     }
   }
 
-  async signUp(email: string, password: string, fullName: string, phone?: string): Promise<{ success: boolean; error?: string }> {
+  async signUp(email: string, password: string, fullName: string, phone?: string, role: UserRole = 'customer'): Promise<{ success: boolean; error?: string }> {
     this._isLoading.set(true);
     const client = this.supabase.client;
 
@@ -127,7 +131,7 @@ export class AuthService {
           email,
           password,
           options: {
-            data: { full_name: fullName, phone: phone || '' }
+            data: { full_name: fullName, phone: phone || '', role }
           }
         });
         this._isLoading.set(false);
@@ -138,13 +142,13 @@ export class AuthService {
         return { success: false, error: err.message || 'فشل في إنشاء الحساب' };
       }
     } else {
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 300));
       const newProfile: Profile = {
         id: 'usr-' + Date.now(),
         full_name: fullName,
         phone: phone || '',
-        role: 'customer',
-        loyalty_points: 50, // Welcome points
+        role: role,
+        loyalty_points: 50,
         city: 'القاهرة'
       };
       this._profile.set(newProfile);
@@ -164,9 +168,16 @@ export class AuthService {
     localStorage.removeItem('beauty_demo_profile');
   }
 
-  // Quick switch for demo/testing between Customer and Admin
-  switchDemoRole(role: 'admin' | 'customer'): void {
-    const target = role === 'admin' ? MOCK_ADMIN_PROFILE : MOCK_CUSTOMER_PROFILE;
+  // Quick switch for demo/testing between Customer, Provider, and Admin
+  switchDemoRole(role: 'admin' | 'customer' | 'provider'): void {
+    let target: Profile;
+    if (role === 'admin') {
+      target = MOCK_ADMIN_PROFILE;
+    } else if (role === 'provider') {
+      target = MOCK_PROVIDER_PROFILE;
+    } else {
+      target = MOCK_CUSTOMER_PROFILE;
+    }
     this._profile.set(target);
     localStorage.setItem('beauty_demo_profile', JSON.stringify(target));
   }

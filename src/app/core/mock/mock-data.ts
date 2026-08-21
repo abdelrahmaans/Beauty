@@ -1,4 +1,4 @@
-import { Category, Product, Coupon, Profile, Order } from '../models';
+import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification } from '../models';
 
 export const MOCK_CATEGORIES: Category[] = [
   {
@@ -169,48 +169,6 @@ export const MOCK_PRODUCTS: Product[] = [
     rating_avg: 5.0,
     reviews_count: 44,
     main_image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'prod-7',
-    category_id: 'cat-1',
-    category: MOCK_CATEGORIES[0],
-    name: 'ماسك زبدة الشيا وزيت المكاديميا للترطيب العميق للشعر الجاف',
-    name_en: 'Raw Shea Butter & Macadamia Deep Moisture Hair Mask',
-    slug: 'shea-macadamia-hair-mask',
-    description: 'حمام كريم فائق الترطيب يعيد الحيوية للشعر المجهد والمعالج كيميائياً، يقضي على النفشة ويمنح لمعاناً حريرياً يدوم طويلاً.',
-    ingredients: 'زبدة شيا عضوية، زيت مكاديميا، بروتين الحرير، زيت جوز الهند، جلسرين نباتي.',
-    how_to_use: 'يوضع على الشعر المغسول بالشامبو من المنتصف حتى الأطراف ويترك 10-15 دقيقة ثم يشطف جيداً.',
-    brand: 'RoseÉlixir Botanicals',
-    price: 360,
-    discount_price: 310,
-    stock_quantity: 50,
-    sku: 'BEA-HAIR-007',
-    is_active: true,
-    is_featured: false,
-    rating_avg: 4.8,
-    reviews_count: 31,
-    main_image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'prod-8',
-    category_id: 'cat-2',
-    category: MOCK_CATEGORIES[1],
-    name: 'غسول رغوي منقي بحمض الساليسيليك وشجرة الشاي',
-    name_en: 'Clarifying Salicylic Acid & Tea Tree Gentle Foaming Cleanser',
-    slug: 'salicylic-tea-tree-cleanser',
-    description: 'ينظف المسام بعمق ويزيل الدهون الزائدة بدون التسبب في جفاف أو شد البشرة، ممتاز للبشرة المعرضة لحب الشباب والرؤوس السوداء.',
-    ingredients: 'Salicylic Acid 2%, Tea Tree Leaf Oil, Allantoin, Aloe Vera Leaf Juice.',
-    how_to_use: 'يضخ مرتين على اليد المبللة ويدلك على الوجه لمدة 60 ثانية بحركات دائرية ثم يشطف بالماء البارد.',
-    brand: 'Botanica Herbals',
-    price: 280,
-    discount_price: 240,
-    stock_quantity: 75,
-    sku: 'BEA-SKIN-008',
-    is_active: true,
-    is_featured: false,
-    rating_avg: 4.6,
-    reviews_count: 19,
-    main_image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80',
   }
 ];
 
@@ -248,7 +206,7 @@ export const MOCK_COUPONS: Coupon[] = [
 
 export const MOCK_ADMIN_PROFILE: Profile = {
   id: 'usr-admin-01',
-  full_name: 'مديرة المنصة | Admin',
+  full_name: 'مديرة المنصة | Admin Operations',
   phone: '01000000000',
   role: 'admin',
   city: 'القاهرة',
@@ -261,10 +219,21 @@ export const MOCK_CUSTOMER_PROFILE: Profile = {
   full_name: 'سارة أحمد',
   phone: '01123456789',
   role: 'customer',
-  city: 'مدينة نصر، القاهرة',
-  address_line: 'شارع عباس العقاد، عمارة 14',
+  city: 'التجمع الخامس، القاهرة',
+  address_line: 'شارع التسعين، فيلا 12',
   loyalty_points: 340,
   avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80'
+};
+
+export const MOCK_PROVIDER_PROFILE: Profile = {
+  id: 'usr-prov-01',
+  full_name: 'أمنية السعيد',
+  phone: '01234567890',
+  role: 'provider',
+  city: 'التجمع، القاهرة',
+  address_line: 'شارع مجمع البنوك',
+  loyalty_points: 520,
+  avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80'
 };
 
 export const MOCK_ORDERS: Order[] = [
@@ -276,7 +245,7 @@ export const MOCK_ORDERS: Order[] = [
     payment_method: 'cash_on_delivery',
     shipping_full_name: 'سارة أحمد',
     shipping_phone: '01123456789',
-    shipping_address: 'شارع عباس العقاد، عمارة 14، شقة 5',
+    shipping_address: 'شارع التسعين، فيلا 12',
     shipping_city: 'القاهرة',
     subtotal: 940,
     discount_amount: 94,
@@ -285,27 +254,257 @@ export const MOCK_ORDERS: Order[] = [
     created_at: '2026-08-10T14:30:00Z',
     items: [
       { product_id: 'prod-1', product: MOCK_PRODUCTS[0], quantity: 1, price_at_purchase: 390 },
-      { product_id: 'prod-2', product: MOCK_PRODUCTS[1], quantity: 1, price_at_purchase: 460 },
-      { product_id: 'prod-3', product: MOCK_PRODUCTS[2], quantity: 1, price_at_purchase: 290 }
+      { product_id: 'prod-2', product: MOCK_PRODUCTS[1], quantity: 1, price_at_purchase: 460 }
+    ]
+  }
+];
+
+// Phase 2 Home Care Services & Specialists Data
+
+export const HOME_CARE_SERVICES = [
+  {
+    id: 'srv-hair-protein',
+    title: 'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
+    category: 'hair',
+    duration: '2.5 - 3 ساعات',
+    basePrice: 1200,
+    description: 'علاج عميق لفرد وتقوية الشعر بمواد برازيلية أصلية خالية من الفورمالين تماماً مع فحص خصلات الشعر بأحدث أجهزة النانو سبريه.',
+    icon: 'fa-feather-pointed'
+  },
+  {
+    id: 'srv-skin-hydra',
+    title: 'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)',
+    category: 'skin',
+    duration: '1.5 ساعة',
+    basePrice: 850,
+    description: 'تنظيف مسام عميق، إزالة الرؤوس السوداء، تقشير كربوني لطيف، وسيرومات تفتيح وميزوثيرابي سطحي لنضارة فورية تدوم.',
+    icon: 'fa-wand-magic-sparkles'
+  },
+  {
+    id: 'srv-hair-botox',
+    title: 'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف',
+    category: 'hair',
+    duration: '2 ساعة',
+    basePrice: 950,
+    description: 'تغذية مكثفة بأحماض أمينية وزيوت طبيعية تعيد بناء روابط الكيراتين المكسورة وتعطي لمعاناً فائقاً.',
+    icon: 'fa-spray-can-sparkles'
+  },
+  {
+    id: 'srv-bride-package',
+    title: 'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)',
+    category: 'full',
+    duration: '4 ساعات',
+    basePrice: 2200,
+    description: 'برنامج مكثف متكامل يشمل تنظيف بشرة ملكي وماسكات طمي البحر الميت مع جلسة ترميم شعر ولمسة بروتين لامعة.',
+    icon: 'fa-crown'
+  }
+];
+
+export const MOCK_PROVIDERS: Provider[] = [
+  {
+    id: 'prov-1',
+    user_id: 'usr-prov-01',
+    type: 'freelancer',
+    status: 'trusted',
+    display_name: 'أمنية السعيد',
+    phone: '01234567890',
+    city: 'التجمع الخامس والقاهرة الجديدة',
+    lat: 30.0263,
+    lng: 31.4967,
+    rating_avg: 4.95,
+    rating_count: 54,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
+    specialties: [
+      'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
+      'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف',
+      'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)'
+    ],
+    bio: 'أخصائية معتمدة بخبرة 7 سنوات في علاجات وترميم الشعر بأحدث التقنيات البرازيلية ومواد الأرجان الأصلية.',
+    documents: [
+      {
+        id: 'doc-1',
+        provider_id: 'prov-1',
+        doc_type: 'national_id',
+        title: 'بطاقة الرقم القومي (سارية)',
+        storage_path: 'docs/omneya_national_id.pdf',
+        reviewed: true
+      },
+      {
+        id: 'doc-2',
+        provider_id: 'prov-1',
+        doc_type: 'certificate',
+        title: 'شهادة الأكاديمية الدولية للعناية بالشعر وترميمه',
+        storage_path: 'docs/omneya_cert.pdf',
+        reviewed: true
+      }
     ]
   },
   {
-    id: 'ord-1002',
-    user_id: 'usr-cust-01',
-    status: 'shipped',
-    payment_status: 'unpaid',
-    payment_method: 'cash_on_delivery',
-    shipping_full_name: 'سارة أحمد',
-    shipping_phone: '01123456789',
-    shipping_address: 'شارع عباس العقاد، عمارة 14',
-    shipping_city: 'القاهرة',
-    subtotal: 990,
-    discount_amount: 0,
-    shipping_fee: 50,
-    total_price: 1040,
-    created_at: '2026-08-16T11:15:00Z',
-    items: [
-      { product_id: 'prod-6', product: MOCK_PRODUCTS[5], quantity: 1, price_at_purchase: 990 }
+    id: 'prov-2',
+    user_id: 'usr-prov-02',
+    type: 'freelancer',
+    status: 'verified',
+    display_name: 'د. ياسمين فؤاد',
+    phone: '01011223344',
+    city: 'المعادي ومدينة نصر، القاهرة',
+    lat: 29.9602,
+    lng: 31.2569,
+    rating_avg: 4.88,
+    rating_count: 42,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+    specialties: [
+      'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)',
+      'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)'
+    ],
+    bio: 'خبيرة عناية بالبشرة وجلسات الهيدرافيشال والتقشير الكربوني وأجهزة النانو ديرما بن.',
+    documents: [
+      {
+        id: 'doc-3',
+        provider_id: 'prov-2',
+        doc_type: 'certificate',
+        title: 'دبلومة متقدمة في العناية بالبشرة والـ HydraFacial',
+        storage_path: 'docs/yasmin_diploma.pdf',
+        reviewed: true
+      }
     ]
+  },
+  {
+    id: 'prov-3',
+    user_id: 'usr-prov-03',
+    type: 'freelancer',
+    status: 'trusted',
+    display_name: 'ريهام عبد العزيز',
+    phone: '01144556677',
+    city: 'الشيخ زايد و 6 أكتوبر',
+    lat: 30.0561,
+    lng: 30.9788,
+    rating_avg: 4.90,
+    rating_count: 36,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    specialties: [
+      'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
+      'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف'
+    ],
+    bio: 'متخصصة في علاجات الشعر الكيرلي والتالف والتطويل الطبيعي والميزوثيرابي المنزلي.',
+    documents: []
+  },
+  {
+    id: 'prov-4',
+    user_id: 'usr-prov-04',
+    type: 'freelancer',
+    status: 'verified',
+    display_name: 'هدى مصطفى',
+    phone: '01299887766',
+    city: 'بني سويف والفيوم',
+    lat: 29.0661,
+    lng: 31.0994,
+    rating_avg: 4.85,
+    rating_count: 28,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=200&q=80',
+    specialties: [
+      'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
+      'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)'
+    ],
+    bio: 'أخصائية معتمدة متخصصة في جلسات العناية المنزلية للعرائس في بني سويف ومحافظات الصعيد.',
+    documents: []
+  }
+];
+
+export const MOCK_BOOKINGS: Booking[] = [
+  {
+    id: 'bok-901',
+    user_id: 'usr-cust-01',
+    customer_name: 'سارة أحمد',
+    customer_phone: '01123456789',
+    provider_id: 'prov-1',
+    provider: MOCK_PROVIDERS[0],
+    service_type: 'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
+    status: 'offered',
+    requested_area: 'شارع التسعين، التجمع الخامس، القاهرة',
+    scheduled_at: '2026-08-25T16:00:00Z',
+    agreed_price: 1150,
+    payment_status: 'unpaid',
+    notes: 'الشعر مصبوغ ومجهد ومحتاجة مواد خالية من الفورمالين تماماً.',
+    created_at: '2026-08-21T10:00:00Z'
+  },
+  {
+    id: 'bok-902',
+    user_id: 'usr-cust-01',
+    customer_name: 'سارة أحمد',
+    customer_phone: '01123456789',
+    provider_id: 'prov-2',
+    provider: MOCK_PROVIDERS[1],
+    service_type: 'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)',
+    status: 'confirmed',
+    requested_area: 'التجمع الخامس، القاهرة',
+    scheduled_at: '2026-08-23T14:30:00Z',
+    agreed_price: 850,
+    payment_status: 'paid',
+    notes: 'جلسة نضارة قبل مناسبة عائلية.',
+    created_at: '2026-08-20T12:00:00Z'
+  },
+  {
+    id: 'bok-903',
+    user_id: 'usr-cust-02',
+    customer_name: 'مها الشريف',
+    customer_phone: '01099887766',
+    provider_id: null,
+    service_type: 'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)',
+    status: 'requested',
+    requested_area: 'الشيخ زايد، الجيزة',
+    scheduled_at: '2026-08-27T17:00:00Z',
+    agreed_price: null,
+    payment_status: 'unpaid',
+    notes: 'ميعاد فرحي قريب ومحتاجة أخصائية بروتين وبشرة معتمدة.',
+    created_at: '2026-08-21T18:45:00Z'
+  },
+  {
+    id: 'bok-904',
+    user_id: 'usr-cust-01',
+    customer_name: 'سارة أحمد',
+    customer_phone: '01123456789',
+    provider_id: 'prov-1',
+    provider: MOCK_PROVIDERS[0],
+    service_type: 'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف',
+    status: 'completed',
+    requested_area: 'شارع التسعين، التجمع الخامس',
+    scheduled_at: '2026-08-15T15:00:00Z',
+    agreed_price: 950,
+    payment_status: 'paid',
+    review: {
+      id: 'rev-b-1',
+      booking_id: 'bok-904',
+      user_id: 'usr-cust-01',
+      provider_id: 'prov-1',
+      rating: 5,
+      comment: 'أمنية شاطرة جداً ومحترفة والنتيجة فاجأتني! شعري بقى ناعم وبيلمع وبدون أي ريحة نفاذة.',
+      created_at: '2026-08-15T18:30:00Z'
+    },
+    created_at: '2026-08-14T09:00:00Z'
+  }
+];
+
+export const MOCK_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 'notif-1',
+    user_id: 'usr-cust-01',
+    title: 'عرض سعر جديد جاهز لمراجعتك!',
+    body: 'قامت الإدارة بترشيح الأخصائية أمنية السعيد لحجز جلسة البروتين الخاصة بك بسعر 1150 ج.م.',
+    is_read: false,
+    related_booking_id: 'bok-901',
+    created_at: '2026-08-21T11:00:00Z'
+  },
+  {
+    id: 'notif-2',
+    user_id: 'usr-prov-01',
+    title: 'جلسة منزلية مؤكدة جديدة!',
+    body: 'تم تأكيد حجز جلسة العناية بالشعر مع العميلة سارة أحمد في التجمع الخامس.',
+    is_read: false,
+    related_booking_id: 'bok-902',
+    created_at: '2026-08-20T12:30:00Z'
   }
 ];

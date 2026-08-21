@@ -179,13 +179,13 @@ create table if not exists loyalty_points_log (
 );
 
 -- =============================================================================
--- 3. PHASE 2 TABLES (PREPARED: PROVIDERS, BOOKINGS, COMMISSIONS)
+-- 3. PHASE 2 TABLES (HOME CARE SESSIONS & PROVIDERS MARKETPLACE)
 -- =============================================================================
 
 -- PROVIDERS (Freelancers & Beauty Centers)
 create table if not exists providers (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references profiles(id),
+  user_id uuid not null references profiles(id) on delete cascade unique,
   type provider_type not null default 'freelancer',
   status provider_status not null default 'pending',
   display_name text not null,
@@ -193,9 +193,21 @@ create table if not exists providers (
   specialties text[] default '{}',
   lat double precision,
   lng double precision,
-  rating_avg numeric(3,2) default 0,
+  city text default 'القاهرة',
+  rating_avg numeric(3,2) default 5.0,
   rating_count int default 0,
   is_available boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- PROVIDER DOCUMENTS (National ID, Certificates)
+create table if not exists provider_documents (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references providers(id) on delete cascade,
+  doc_type text not null, -- 'national_id' | 'certificate' | 'other'
+  title text not null,
+  storage_path text not null,
+  reviewed boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -206,12 +218,49 @@ create table if not exists bookings (
   provider_id uuid references providers(id),
   service_type text not null,
   status booking_status not null default 'requested',
-  requested_area text,
+  requested_area text not null,
+  customer_phone text,
   scheduled_at timestamptz,
   agreed_price numeric(10,2),
   notes text,
+  payment_status payment_status not null default 'unpaid',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+-- BOOKING REVIEWS (Session Reviews & Ratings)
+create table if not exists booking_reviews (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references bookings(id) on delete cascade,
+  user_id uuid not null references profiles(id),
+  provider_id uuid not null references providers(id),
+  rating int not null check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz not null default now(),
+  unique (booking_id)
+);
+
+-- BOOKING REPORTS (Issue reports sent directly to Admin)
+create type report_status as enum ('open', 'in_review', 'resolved');
+
+create table if not exists booking_reports (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references bookings(id) on delete cascade,
+  reported_by uuid not null references profiles(id),
+  description text not null,
+  status report_status not null default 'open',
+  created_at timestamptz not null default now()
+);
+
+-- NOTIFICATIONS (In-app notifications for customer & provider)
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  title text not null,
+  body text,
+  is_read boolean not null default false,
+  related_booking_id uuid references bookings(id),
+  created_at timestamptz not null default now()
 );
 
 -- COMMISSIONS
@@ -219,11 +268,30 @@ create table if not exists commissions (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid not null references bookings(id) on delete cascade,
   session_value numeric(10,2) not null,
-  commission_rate numeric(5,2) not null, -- e.g. 15.00 for 15%
+  commission_rate numeric(5,2) not null default 15.00, -- 15% standard rate
   commission_amount numeric(10,2) not null,
   payout_status payout_status not null default 'pending',
   created_at timestamptz not null default now()
 );
+
+-- Trigger: Update provider rating_avg and rating_count automatically on new review
+create or replace function update_provider_rating()
+returns trigger language plpgsql as $$
+begin
+  update providers
+  set
+    rating_avg = coalesce((select avg(rating) from booking_reviews where provider_id = new.provider_id), 5.0),
+    rating_count = (select count(*) from booking_reviews where provider_id = new.provider_id)
+  where id = new.provider_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_update_provider_rating on booking_reviews;
+create trigger trg_update_provider_rating
+after insert or update on booking_reviews
+for each row execute function update_provider_rating();
+
 
 -- =============================================================================
 -- 4. GEO-DISTANCE & PROVIDER MATCHING FUNCTION

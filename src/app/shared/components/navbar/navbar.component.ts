@@ -5,38 +5,52 @@ import { FormsModule } from '@angular/forms';
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProductsService } from '../../../core/services/products.service';
+import { NotificationsService } from '../../../core/services/notifications.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <!-- Top Announcement Bar -->
+    <!-- Top Announcement & Multi-Role Demo Bar -->
     <div class="top-banner">
       <div class="container-custom banner-content">
         <div class="banner-item">
           <i class="fa-solid fa-sparkles"></i>
-          <span>شحن مجاني للطلبات أكثر من 800 ج.م في جميع محافظات مصر</span>
+          <span>منصة متكاملة: متجر منتجات أصلية + سوق جلسات العناية المنزلية في مصر</span>
         </div>
+
         <div class="banner-actions">
           <span class="loyalty-badge" *ngIf="auth.isAuthenticated()">
             <i class="fa-solid fa-gem"></i>
-            رصيدك: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة ولاء
+            رصيدك: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة
           </span>
+
+          <!-- 3-Role Demo Switcher -->
           <div class="demo-role-switcher">
             <button
               class="role-pill"
-              [class.active]="!auth.isAdmin()"
+              [class.active]="auth.userRole() === 'customer'"
               (click)="auth.switchDemoRole('customer')"
-              title="التبديل إلى وضع العميل"
+              title="تجربة كعميلة للمتجر والجلسات"
             >
-              <i class="fa-regular fa-user"></i> وضع العميل
+              <i class="fa-regular fa-user"></i> وضع العميلة
             </button>
+
+            <button
+              class="role-pill provider-pill"
+              [class.active]="auth.userRole() === 'provider'"
+              (click)="auth.switchDemoRole('provider')"
+              title="تجربة كأخصائية تجميل / فريلانسر"
+            >
+              <i class="fa-solid fa-wand-magic-sparkles"></i> بوابة الأخصائية
+            </button>
+
             <button
               class="role-pill admin-pill"
-              [class.active]="auth.isAdmin()"
+              [class.active]="auth.userRole() === 'admin'"
               (click)="auth.switchDemoRole('admin')"
-              title="التبديل إلى وضع الأدمن"
+              title="تجربة كمديرة المنصة والترشيح"
             >
               <i class="fa-solid fa-shield-halved"></i> وضع الأدمن
             </button>
@@ -55,7 +69,7 @@ import { ProductsService } from '../../../core/services/products.service';
           </div>
           <div class="logo-text">
             <span class="brand-title">BEAUTY</span>
-            <span class="brand-sub">العناية بالشعر والبشرة</span>
+            <span class="brand-sub">متجر وجلسات العناية الفاخرة</span>
           </div>
         </a>
 
@@ -64,7 +78,7 @@ import { ProductsService } from '../../../core/services/products.service';
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
           <input
             type="text"
-            placeholder="ابحثي عن شامبو، سيروم، واقي شمس، أو ماركة..."
+            placeholder="ابحثي عن شامبو، سيروم، واقي شمس، أو جلسات..."
             [ngModel]="productsService.searchQuery()"
             (ngModelChange)="onSearch($event)"
             class="search-input"
@@ -86,6 +100,15 @@ import { ProductsService } from '../../../core/services/products.service';
           </a>
           <a routerLink="/products" routerLinkActive="active" class="nav-item">
             المتجر والمنتجات
+          </a>
+          <a routerLink="/booking/request" routerLinkActive="active" class="nav-item home-service-link">
+            <i class="fa-solid fa-sparkles"></i> حجز جلسة منزلية
+          </a>
+          <a routerLink="/booking/my-bookings" routerLinkActive="active" class="nav-item">
+            جلساتي
+          </a>
+          <a *ngIf="auth.isProvider() || auth.isAdmin()" routerLink="/provider" routerLinkActive="active" class="nav-item provider-nav-link">
+            <i class="fa-solid fa-id-badge"></i> بوابة الأخصائية
           </a>
           <a *ngIf="auth.isAdmin()" routerLink="/admin" routerLinkActive="active" class="nav-item admin-link">
             <i class="fa-solid fa-gauge-high"></i> لوحة التحكم
@@ -158,9 +181,9 @@ import { ProductsService } from '../../../core/services/products.service';
     .role-pill {
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(255, 255, 255, 0.75);
       font-size: 0.72rem;
-      padding: 0.15rem 0.55rem;
+      padding: 0.15rem 0.6rem;
       border-radius: 9999px;
       cursor: pointer;
       font-family: inherit;
@@ -173,6 +196,10 @@ import { ProductsService } from '../../../core/services/products.service';
         background: #FFFFFF;
         color: #1E1B18;
         font-weight: 700;
+      }
+      &.provider-pill.active {
+        background: #10B981;
+        color: #FFFFFF;
       }
       &.admin-pill.active {
         background: #C46D5B;
@@ -232,7 +259,7 @@ import { ProductsService } from '../../../core/services/products.service';
     }
     .search-box {
       flex: 1;
-      max-width: 460px;
+      max-width: 420px;
       position: relative;
       display: flex;
       align-items: center;
@@ -272,20 +299,29 @@ import { ProductsService } from '../../../core/services/products.service';
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 1.25rem;
+      gap: 1rem;
     }
     .nav-item {
       text-decoration: none;
       color: var(--color-text-main);
       font-weight: 600;
-      font-size: 0.95rem;
-      padding: 0.4rem 0.75rem;
+      font-size: 0.92rem;
+      padding: 0.4rem 0.65rem;
       border-radius: 8px;
       transition: var(--transition-smooth);
 
       &:hover, &.active {
         color: var(--color-primary);
         background: var(--color-primary-subtle);
+      }
+      &.home-service-link {
+        color: var(--color-secondary);
+        background: var(--color-secondary-light);
+        font-weight: 700;
+      }
+      &.provider-nav-link {
+        color: #15803D;
+        background: #DCFCE7;
       }
       &.admin-link {
         color: #C46D5B;
@@ -323,9 +359,7 @@ import { ProductsService } from '../../../core/services/products.service';
         background: var(--color-primary-subtle);
       }
     }
-    .cart-btn {
-      padding: 0.6rem 0.8rem;
-    }
+    .cart-btn { padding: 0.6rem 0.8rem; }
     .cart-badge {
       position: absolute;
       top: -6px;
@@ -348,6 +382,7 @@ export class NavbarComponent {
   cart = inject(CartService);
   auth = inject(AuthService);
   productsService = inject(ProductsService);
+  notifications = inject(NotificationsService);
 
   onSearch(query: string): void {
     this.productsService.setSearchQuery(query);

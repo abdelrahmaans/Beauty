@@ -1,4 +1,4 @@
-export type UserRole = 'customer' | 'admin';
+export type UserRole = 'customer' | 'admin' | 'provider';
 export type DiscountType = 'percentage' | 'fixed';
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
@@ -8,6 +8,7 @@ export type ProviderStatus = 'pending' | 'verified' | 'trusted' | 'suspended';
 export type BookingStatus = 'requested' | 'offered' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'reported';
 export type PayoutStatus = 'pending' | 'paid';
 export type PointsSource = 'order' | 'booking' | 'redemption' | 'manual';
+export type ReportStatus = 'open' | 'in_review' | 'resolved';
 
 export interface Profile {
   id: string;
@@ -144,35 +145,98 @@ export interface LoyaltyPointLog {
   created_at: string;
 }
 
-// Prepared Models for Phase 2
+// Phase 2: Home Care Marketplace Models
+
+export interface ProviderDocument {
+  id: string;
+  provider_id: string;
+  doc_type: 'national_id' | 'certificate' | 'other';
+  title: string;
+  storage_path: string;
+  reviewed: boolean;
+  created_at?: string;
+}
+
 export interface Provider {
   id: string;
-  user_id?: string;
+  user_id: string;
+  user?: Profile;
   type: ProviderType;
   status: ProviderStatus;
   display_name: string;
+  phone?: string;
   bio?: string;
   specialties: string[];
+  city?: string;
   lat?: number;
   lng?: number;
   rating_avg: number;
   rating_count: number;
   is_available: boolean;
+  avatar_url?: string;
+  documents?: ProviderDocument[];
+  distance_km?: number; // Calculated dynamically during matching
   created_at?: string;
+}
+
+export interface BookingReview {
+  id: string;
+  booking_id: string;
+  user_id: string;
+  provider_id: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
+export interface BookingReport {
+  id: string;
+  booking_id: string;
+  reported_by: string;
+  reporter?: Profile;
+  description: string;
+  status: ReportStatus;
+  created_at: string;
 }
 
 export interface Booking {
   id: string;
   user_id: string;
   user?: Profile;
-  provider_id?: string;
+  customer_phone?: string;
+  customer_name?: string;
+  provider_id?: string | null;
   provider?: Provider;
   service_type: string;
   status: BookingStatus;
-  requested_area?: string;
+  requested_area: string;
   scheduled_at?: string;
-  agreed_price?: number;
+  agreed_price?: number | null;
+  payment_status: PaymentStatus;
   notes?: string;
+  review?: BookingReview;
+  report?: BookingReport;
   created_at: string;
   updated_at?: string;
+}
+
+export interface Commission {
+  id: string;
+  booking_id: string;
+  booking?: Booking;
+  session_value: number;
+  commission_rate: number; // e.g. 15 (%)
+  commission_amount: number;
+  payout_status: PayoutStatus;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  is_read: boolean;
+  related_booking_id?: string;
+  created_at: string;
 }

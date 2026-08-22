@@ -1,4 +1,4 @@
-import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification } from '../models';
+import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification, CenterService, ReferralCode, ReferralRedemption } from '../models';
 
 export const MOCK_CATEGORIES: Category[] = [
   {
@@ -106,69 +106,6 @@ export const MOCK_PRODUCTS: Product[] = [
     rating_avg: 4.7,
     reviews_count: 29,
     main_image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'prod-4',
-    category_id: 'cat-3',
-    category: MOCK_CATEGORIES[2],
-    name: 'واقي شمس جل غير دهني SPF 50+ بحماية واسعة المدى',
-    name_en: 'Invisible Aqua Gel Sunscreen SPF 50+ PA++++',
-    slug: 'aqua-gel-sunscreen-spf50',
-    description: 'واقي شمس بقوام مائي خفيف يمتص سريعاً بدون ترك أي أثر أبيض أو لمعان، مناسب للبشرة الدهنية والمعرضة للحبوب تحت المكياج.',
-    ingredients: 'Zinc Oxide (Nano-free), Centella Asiatica Extract, Niacinamide, Vitamin B5.',
-    how_to_use: 'يوضع قبل الخروج للشمس بـ 15 دقيقة، ويعاد تطبيقه كل ساعتين عند التعرض المباشر.',
-    brand: 'DermaShield Pro',
-    price: 420,
-    discount_price: 370,
-    stock_quantity: 80,
-    sku: 'BEA-SUN-004',
-    is_active: true,
-    is_featured: true,
-    rating_avg: 4.9,
-    reviews_count: 64,
-    main_image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'prod-5',
-    category_id: 'cat-3',
-    category: MOCK_CATEGORIES[2],
-    name: 'كريم ترطيب مكثف بالسيراميد وحمض الهيالورونيك للبشرة الجافة',
-    name_en: 'Ceramide Barrier Repair Intensive Cream',
-    slug: 'ceramide-barrier-cream',
-    description: 'يعيد بناء حاجز البشرة المتضرر، يمنح ترطيباً عميقاً يدوم 48 ساعة ويحمي من الجفاف والتهيج الموسمي.',
-    ingredients: '3 Essential Ceramides (1, 3, 6-II), Hyaluronic Acid, Shea Butter, Squalane.',
-    how_to_use: 'يستخدم مرتين يومياً صباحاً ومساءً على الوجه والرقبة مع التدليك اللطيف.',
-    brand: 'DermaShield Pro',
-    price: 390,
-    discount_price: null,
-    stock_quantity: 40,
-    sku: 'BEA-MOIST-005',
-    is_active: true,
-    is_featured: false,
-    rating_avg: 4.8,
-    reviews_count: 21,
-    main_image: 'https://images.unsplash.com/photo-1608248597359-53e7787f7d45?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'prod-6',
-    category_id: 'cat-4',
-    category: MOCK_CATEGORIES[3],
-    name: 'مجموعة النضارة والترميم الملكية (سيروم + كريم + غسول)',
-    name_en: 'Royal Radiance & Repair 3-Step Routine Set',
-    slug: 'royal-radiance-repair-set',
-    description: 'بوكس العناية المتكامل للنضارة وتجديد البشرة في 3 خطوات بسيطة: غسول الأحماض اللطيف، سيروم الإشراقة، وكريم السيراميد الفاخر.',
-    ingredients: 'مجموعة المكونات النشطة من فيتامين C، سيراميدات، هيالورونيك، ومستخلص الشاي الأخضر.',
-    how_to_use: 'الخطوة 1: الغسول. الخطوة 2: السيروم على بشرة شبه جافة. الخطوة 3: تثبيت الترطيب بالكريم.',
-    brand: 'Lumière Glow Skin',
-    price: 1250,
-    discount_price: 990,
-    stock_quantity: 18,
-    sku: 'BEA-SET-006',
-    is_active: true,
-    is_featured: true,
-    rating_avg: 5.0,
-    reviews_count: 44,
-    main_image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
   }
 ];
 
@@ -190,16 +127,6 @@ export const MOCK_COUPONS: Coupon[] = [
     value: 50,
     min_order_amount: 500,
     times_used: 45,
-    is_active: true
-  },
-  {
-    id: 'coup-3',
-    code: 'WELCOME20',
-    discount_type: 'percentage',
-    value: 20,
-    min_order_amount: 400,
-    max_discount_amount: 200,
-    times_used: 15,
     is_active: true
   }
 ];
@@ -227,13 +154,24 @@ export const MOCK_CUSTOMER_PROFILE: Profile = {
 
 export const MOCK_PROVIDER_PROFILE: Profile = {
   id: 'usr-prov-01',
-  full_name: 'أمنية السعيد',
+  full_name: 'أمنية السعيد (أخصائية منزلية)',
   phone: '01234567890',
   role: 'provider',
   city: 'التجمع، القاهرة',
   address_line: 'شارع مجمع البنوك',
   loyalty_points: 520,
   avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80'
+};
+
+export const MOCK_CENTER_PROFILE: Profile = {
+  id: 'usr-center-01',
+  full_name: 'إدارة مركز L’Étoile Beauty & Spa',
+  phone: '01055667788',
+  role: 'center',
+  city: 'التجمع الخامس، القاهرة',
+  address_line: 'ميدان داون تاون، مبنى S2',
+  loyalty_points: 980,
+  avatar_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=200&q=80'
 };
 
 export const MOCK_ORDERS: Order[] = [
@@ -253,14 +191,12 @@ export const MOCK_ORDERS: Order[] = [
     total_price: 896,
     created_at: '2026-08-10T14:30:00Z',
     items: [
-      { product_id: 'prod-1', product: MOCK_PRODUCTS[0], quantity: 1, price_at_purchase: 390 },
-      { product_id: 'prod-2', product: MOCK_PRODUCTS[1], quantity: 1, price_at_purchase: 460 }
+      { product_id: 'prod-1', product: MOCK_PRODUCTS[0], quantity: 1, price_at_purchase: 390 }
     ]
   }
 ];
 
 // Phase 2 Home Care Services & Specialists Data
-
 export const HOME_CARE_SERVICES = [
   {
     id: 'srv-hair-protein',
@@ -279,24 +215,6 @@ export const HOME_CARE_SERVICES = [
     basePrice: 850,
     description: 'تنظيف مسام عميق، إزالة الرؤوس السوداء، تقشير كربوني لطيف، وسيرومات تفتيح وميزوثيرابي سطحي لنضارة فورية تدوم.',
     icon: 'fa-wand-magic-sparkles'
-  },
-  {
-    id: 'srv-hair-botox',
-    title: 'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف',
-    category: 'hair',
-    duration: '2 ساعة',
-    basePrice: 950,
-    description: 'تغذية مكثفة بأحماض أمينية وزيوت طبيعية تعيد بناء روابط الكيراتين المكسورة وتعطي لمعاناً فائقاً.',
-    icon: 'fa-spray-can-sparkles'
-  },
-  {
-    id: 'srv-bride-package',
-    title: 'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)',
-    category: 'full',
-    duration: '4 ساعات',
-    basePrice: 2200,
-    description: 'برنامج مكثف متكامل يشمل تنظيف بشرة ملكي وماسكات طمي البحر الميت مع جلسة ترميم شعر ولمسة بروتين لامعة.',
-    icon: 'fa-crown'
   }
 ];
 
@@ -315,30 +233,8 @@ export const MOCK_PROVIDERS: Provider[] = [
     rating_count: 54,
     is_available: true,
     avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
-    specialties: [
-      'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
-      'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف',
-      'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)'
-    ],
-    bio: 'أخصائية معتمدة بخبرة 7 سنوات في علاجات وترميم الشعر بأحدث التقنيات البرازيلية ومواد الأرجان الأصلية.',
-    documents: [
-      {
-        id: 'doc-1',
-        provider_id: 'prov-1',
-        doc_type: 'national_id',
-        title: 'بطاقة الرقم القومي (سارية)',
-        storage_path: 'docs/omneya_national_id.pdf',
-        reviewed: true
-      },
-      {
-        id: 'doc-2',
-        provider_id: 'prov-1',
-        doc_type: 'certificate',
-        title: 'شهادة الأكاديمية الدولية للعناية بالشعر وترميمه',
-        storage_path: 'docs/omneya_cert.pdf',
-        reviewed: true
-      }
-    ]
+    specialties: ['جلسة بروتين وكولاجين وترميم الشعر الفاخر', 'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف'],
+    bio: 'أخصائية معتمدة بخبرة 7 سنوات في علاجات وترميم الشعر بأحدث التقنيات البرازيلية ومواد الأرجان الأصلية.'
   },
   {
     id: 'prov-2',
@@ -354,63 +250,8 @@ export const MOCK_PROVIDERS: Provider[] = [
     rating_count: 42,
     is_available: true,
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
-    specialties: [
-      'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)',
-      'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)'
-    ],
-    bio: 'خبيرة عناية بالبشرة وجلسات الهيدرافيشال والتقشير الكربوني وأجهزة النانو ديرما بن.',
-    documents: [
-      {
-        id: 'doc-3',
-        provider_id: 'prov-2',
-        doc_type: 'certificate',
-        title: 'دبلومة متقدمة في العناية بالبشرة والـ HydraFacial',
-        storage_path: 'docs/yasmin_diploma.pdf',
-        reviewed: true
-      }
-    ]
-  },
-  {
-    id: 'prov-3',
-    user_id: 'usr-prov-03',
-    type: 'freelancer',
-    status: 'trusted',
-    display_name: 'ريهام عبد العزيز',
-    phone: '01144556677',
-    city: 'الشيخ زايد و 6 أكتوبر',
-    lat: 30.0561,
-    lng: 30.9788,
-    rating_avg: 4.90,
-    rating_count: 36,
-    is_available: true,
-    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-    specialties: [
-      'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
-      'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف'
-    ],
-    bio: 'متخصصة في علاجات الشعر الكيرلي والتالف والتطويل الطبيعي والميزوثيرابي المنزلي.',
-    documents: []
-  },
-  {
-    id: 'prov-4',
-    user_id: 'usr-prov-04',
-    type: 'freelancer',
-    status: 'verified',
-    display_name: 'هدى مصطفى',
-    phone: '01299887766',
-    city: 'بني سويف والفيوم',
-    lat: 29.0661,
-    lng: 31.0994,
-    rating_avg: 4.85,
-    rating_count: 28,
-    is_available: true,
-    avatar_url: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=200&q=80',
-    specialties: [
-      'جلسة بروتين وكولاجين وترميم الشعر الفاخر',
-      'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)'
-    ],
-    bio: 'أخصائية معتمدة متخصصة في جلسات العناية المنزلية للعرائس في بني سويف ومحافظات الصعيد.',
-    documents: []
+    specialties: ['جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)'],
+    bio: 'خبيرة عناية بالبشرة وجلسات الهيدرافيشال والتقشير الكربوني وأجهزة النانو ديرما بن.'
   }
 ];
 
@@ -430,61 +271,6 @@ export const MOCK_BOOKINGS: Booking[] = [
     payment_status: 'unpaid',
     notes: 'الشعر مصبوغ ومجهد ومحتاجة مواد خالية من الفورمالين تماماً.',
     created_at: '2026-08-21T10:00:00Z'
-  },
-  {
-    id: 'bok-902',
-    user_id: 'usr-cust-01',
-    customer_name: 'سارة أحمد',
-    customer_phone: '01123456789',
-    provider_id: 'prov-2',
-    provider: MOCK_PROVIDERS[1],
-    service_type: 'جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)',
-    status: 'confirmed',
-    requested_area: 'التجمع الخامس، القاهرة',
-    scheduled_at: '2026-08-23T14:30:00Z',
-    agreed_price: 850,
-    payment_status: 'paid',
-    notes: 'جلسة نضارة قبل مناسبة عائلية.',
-    created_at: '2026-08-20T12:00:00Z'
-  },
-  {
-    id: 'bok-903',
-    user_id: 'usr-cust-02',
-    customer_name: 'مها الشريف',
-    customer_phone: '01099887766',
-    provider_id: null,
-    service_type: 'بكج العناية الملكي للعروس والمناسبات (شعر + بشرة)',
-    status: 'requested',
-    requested_area: 'الشيخ زايد، الجيزة',
-    scheduled_at: '2026-08-27T17:00:00Z',
-    agreed_price: null,
-    payment_status: 'unpaid',
-    notes: 'ميعاد فرحي قريب ومحتاجة أخصائية بروتين وبشرة معتمدة.',
-    created_at: '2026-08-21T18:45:00Z'
-  },
-  {
-    id: 'bok-904',
-    user_id: 'usr-cust-01',
-    customer_name: 'سارة أحمد',
-    customer_phone: '01123456789',
-    provider_id: 'prov-1',
-    provider: MOCK_PROVIDERS[0],
-    service_type: 'جلسة فيلر وبوتوكس للشعر المجهد والمتقصف',
-    status: 'completed',
-    requested_area: 'شارع التسعين، التجمع الخامس',
-    scheduled_at: '2026-08-15T15:00:00Z',
-    agreed_price: 950,
-    payment_status: 'paid',
-    review: {
-      id: 'rev-b-1',
-      booking_id: 'bok-904',
-      user_id: 'usr-cust-01',
-      provider_id: 'prov-1',
-      rating: 5,
-      comment: 'أمنية شاطرة جداً ومحترفة والنتيجة فاجأتني! شعري بقى ناعم وبيلمع وبدون أي ريحة نفاذة.',
-      created_at: '2026-08-15T18:30:00Z'
-    },
-    created_at: '2026-08-14T09:00:00Z'
   }
 ];
 
@@ -497,14 +283,288 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
     is_read: false,
     related_booking_id: 'bok-901',
     created_at: '2026-08-21T11:00:00Z'
+  }
+];
+
+// =============================================================================
+// PHASE 3: BEAUTY CENTERS DIRECTORY MOCK DATA
+// =============================================================================
+
+export const MOCK_CENTERS: Provider[] = [
+  {
+    id: 'ctr-1',
+    user_id: 'usr-center-01',
+    type: 'center',
+    status: 'trusted',
+    display_name: 'L’Étoile Beauty & Spa Lounge',
+    phone: '01055667788',
+    city: 'التجمع الخامس، القاهرة الجديدة',
+    address_line: 'ميدان داون تاون، شارع التسعين الجنوبي، مبنى S2، الدور الثاني',
+    lat: 30.0194,
+    lng: 31.4385,
+    rating_avg: 4.96,
+    rating_count: 142,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
+    photos: [
+      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80'
+    ],
+    opening_hours: 'يومياً من 11:00 صباحاً حتى 10:00 مساءً (الجمعة 01:00 م)',
+    bio: 'وجهة الجمال والسبا الفاخرة في القاهرة الجديدة. نوفر أحدث أجهزة الهيدرافيشال الأصلية، جلسات الحمام المغربي الملكي بالأعشاب، وأجنحة تصفيف وترميم الشعر بمعايير عالمية.',
+    specialties: ['علاجات الشعر والبروتين', 'جلسات تنظيف وبشرة زجاجية', 'حمام مغربي وسبا', 'أجنحة العرائس والميك أب'],
+    referral_code: {
+      id: 'ref-1',
+      provider_id: 'ctr-1',
+      code: 'LETOILE15',
+      discount_description: 'خصم حصري 15% على جميع خدمات السبا والشعر',
+      discount_percentage: 15,
+      commission_rate: 10, // 10% Platform commission on confirmed bookings
+      is_active: true
+    },
+    center_services: [
+      {
+        id: 'cs-1',
+        provider_id: 'ctr-1',
+        service_name: 'جلسة البروتين والكافيار الملكي لفرد وترميم الشعر',
+        description: 'فحص إلكتروني للشعر وجلسة علاجية بمواد أصلية خالية من الفورمالين 100%.',
+        price_from: 1400,
+        price_to: 2200,
+        is_active: true,
+        category: 'hair'
+      },
+      {
+        id: 'cs-2',
+        provider_id: 'ctr-1',
+        service_name: 'جلسة هيدرافيشال إيليت مع ماسك الذهب عيار 24',
+        description: 'تنظيف مسام، تقشير كربوني، وتغذية بالهيالورونيك والميزوثيرابي السطحي.',
+        price_from: 950,
+        price_to: 1500,
+        is_active: true,
+        category: 'skin'
+      },
+      {
+        id: 'cs-3',
+        provider_id: 'ctr-1',
+        service_name: 'الحمام المغربي الملكي بالأعشاب الطبيعية وصابون الغار',
+        description: 'جلسة بخار مغربي، ليفة كيس أصلية، ماسك طمي البحر الميت، وترطيب بالمسك الأبيض.',
+        price_from: 800,
+        price_to: 1200,
+        is_active: true,
+        category: 'spa'
+      },
+      {
+        id: 'cs-4',
+        provider_id: 'ctr-1',
+        service_name: 'بكج العروس الفاخر (شعر + بشرة + سبا كامل + ميك أب)',
+        description: 'يوم كامل من الاستجمام والتحضير المتكامل للعروس في جناح خاص.',
+        price_from: 3500,
+        price_to: 6000,
+        is_active: true,
+        category: 'bridal'
+      }
+    ]
   },
   {
-    id: 'notif-2',
-    user_id: 'usr-prov-01',
-    title: 'جلسة منزلية مؤكدة جديدة!',
-    body: 'تم تأكيد حجز جلسة العناية بالشعر مع العميلة سارة أحمد في التجمع الخامس.',
-    is_read: false,
-    related_booking_id: 'bok-902',
-    created_at: '2026-08-20T12:30:00Z'
+    id: 'ctr-2',
+    user_id: 'usr-center-02',
+    type: 'center',
+    status: 'trusted',
+    display_name: 'Glow & Glamour Hair Lounge',
+    phone: '01122334455',
+    city: 'المعادي، القاهرة',
+    address_line: 'شارع 9، أمام محطة مترو المعادي، عمارة سرايات المعادي',
+    lat: 29.9602,
+    lng: 31.2569,
+    rating_avg: 4.89,
+    rating_count: 98,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
+    photos: [
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80'
+    ],
+    opening_hours: 'يومياً من 10:00 ص حتى 09:00 م (الأحد عطلة)',
+    bio: 'المركز المتخصص الأول في صبغات البالياج الحديثة، ترميم روابط الشعر بـ Olaplex، وجلسات البوتوكس العلاجي في المعادي.',
+    specialties: ['صبغات وبالياج عالمي', 'علاجات أولابلكس وبوتوكس', 'قص وتصفيف عصري'],
+    referral_code: {
+      id: 'ref-2',
+      provider_id: 'ctr-2',
+      code: 'GLOWMAADI10',
+      discount_description: 'خصم 10% على صبغات البالياج وجلسات البوتوكس',
+      discount_percentage: 10,
+      commission_rate: 10,
+      is_active: true
+    },
+    center_services: [
+      {
+        id: 'cs-5',
+        provider_id: 'ctr-2',
+        service_name: 'صبغة بالياج فرنسي مع بروتين الحماية Olaplex',
+        description: 'تفتيح احترافي بدون إجهاد للشعر وتوحيد درجات النيود والأشقر الرمادي.',
+        price_from: 1800,
+        price_to: 3200,
+        is_active: true,
+        category: 'hair'
+      },
+      {
+        id: 'cs-6',
+        provider_id: 'ctr-2',
+        service_name: 'جلسة ترميم فيلر وبوتوكس لتقصف أطراف الشعر',
+        description: 'إعادة ملء الفراغات الدقيقة في خصلات الشعر المتكسر.',
+        price_from: 900,
+        price_to: 1400,
+        is_active: true,
+        category: 'hair'
+      }
+    ]
+  },
+  {
+    id: 'ctr-3',
+    user_id: 'usr-center-03',
+    type: 'center',
+    status: 'verified',
+    display_name: 'Royal Diva Wellness & Laser Spa',
+    phone: '01288990011',
+    city: 'الشيخ زايد، 6 أكتوبر',
+    address_line: 'وصلة دهشور، مول أركان بلازا، مبنى 4',
+    lat: 30.0561,
+    lng: 30.9788,
+    rating_avg: 4.92,
+    rating_count: 115,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80',
+    photos: [
+      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80'
+    ],
+    opening_hours: 'يومياً من 11:00 ص حتى 10:00 م',
+    bio: 'عيادات ومركز تجميل متكامل يجمع بين جلسات العناية بالبشرة بالليزر غير الجراحي، تنظيف المسام الكربوني، وعلاجات الميزوثيرابي وتجديد الخلايا.',
+    specialties: ['جلسات ليزر وتقشير كربوني', 'عناية بالبشرة وميزوثيرابي', 'جلسات ديتوكس الجسم'],
+    referral_code: {
+      id: 'ref-3',
+      provider_id: 'ctr-3',
+      code: 'ROYALDIVA20',
+      discount_description: 'خصم حصري 20% على جلسات الليزر والتقشير الكربوني',
+      discount_percentage: 20,
+      commission_rate: 12,
+      is_active: true
+    },
+    center_services: [
+      {
+        id: 'cs-7',
+        provider_id: 'ctr-3',
+        service_name: 'جلسة تقشير كربوني هوليوودي لنضارة وتفتيح المسام',
+        description: 'إزالة التصبغات وإعادة النضارة الفورية للبشرة بأحدث أجهزة Q-Switched Laser.',
+        price_from: 750,
+        price_to: 1200,
+        is_active: true,
+        category: 'skin'
+      },
+      {
+        id: 'cs-8',
+        provider_id: 'ctr-3',
+        service_name: 'جلسة ديرمابن مع خلايا جذعية ومحفزات الكولاجين',
+        description: 'علاج آثار الحبوب والندبات السطحية وشد البشرة المترهلة.',
+        price_from: 850,
+        price_to: 1400,
+        is_active: true,
+        category: 'skin'
+      }
+    ]
+  },
+  {
+    id: 'ctr-4',
+    user_id: 'usr-center-04',
+    type: 'center',
+    status: 'verified',
+    display_name: 'La Rose Beauty Center & Bridal Suites',
+    phone: '01199887766',
+    city: 'بني سويف، كورنيش النيل',
+    address_line: 'شارع كورنيش النيل، برج رويال بلازا، الدور الأول',
+    lat: 29.0661,
+    lng: 31.0994,
+    rating_avg: 4.87,
+    rating_count: 67,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
+    photos: [
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
+    ],
+    opening_hours: 'يومياً من 10:00 ص حتى 09:30 م',
+    bio: 'المركز الرائد للعناية بالمرأة والعروس في محافظة بني سويف ومحافظات شمال الصعيد بأطقم متخصصة معتمدة.',
+    specialties: ['عناية العرائس الشاملة', 'فرد وبروتين الشعر', 'جلسات تنظيف بشرة مائية'],
+    referral_code: {
+      id: 'ref-4',
+      provider_id: 'ctr-4',
+      code: 'LAROSE10',
+      discount_description: 'خصم 10% على بكجات العرائس وجلسات البروتين',
+      discount_percentage: 10,
+      commission_rate: 10,
+      is_active: true
+    },
+    center_services: [
+      {
+        id: 'cs-9',
+        provider_id: 'ctr-4',
+        service_name: 'جلسة بروتين وماسك الحرير لمعالجة الشعر التالف',
+        price_from: 1000,
+        price_to: 1800,
+        is_active: true,
+        category: 'hair'
+      },
+      {
+        id: 'cs-10',
+        provider_id: 'ctr-4',
+        service_name: 'بكج العروسة الكامل (تنظيف عميق + حمام تركي + مكياج)',
+        price_from: 2500,
+        price_to: 4500,
+        is_active: true,
+        category: 'bridal'
+      }
+    ]
+  }
+];
+
+export const MOCK_REFERRAL_REDEMPTIONS: ReferralRedemption[] = [
+  {
+    id: 'rdm-101',
+    referral_code_id: 'ref-1',
+    referral_code: MOCK_CENTERS[0].referral_code,
+    user_id: 'usr-cust-01',
+    user: MOCK_CUSTOMER_PROFILE,
+    provider_id: 'ctr-1',
+    provider: MOCK_CENTERS[0],
+    status: 'claimed',
+    notes: 'العميلة طلبت الكود لحجز جلسة حمام مغربي وهيدرافيشال.',
+    claimed_at: '2026-08-22T09:30:00Z'
+  },
+  {
+    id: 'rdm-102',
+    referral_code_id: 'ref-1',
+    referral_code: MOCK_CENTERS[0].referral_code,
+    user_id: 'usr-cust-02',
+    provider_id: 'ctr-1',
+    provider: MOCK_CENTERS[0],
+    status: 'confirmed_by_center',
+    estimated_value: 1600,
+    commission_amount: 160, // 10%
+    notes: 'تمت الزيارة واستخدام كود الخصم بنجاح.',
+    claimed_at: '2026-08-18T14:00:00Z',
+    confirmed_at: '2026-08-19T17:30:00Z'
+  },
+  {
+    id: 'rdm-103',
+    referral_code_id: 'ref-2',
+    referral_code: MOCK_CENTERS[1].referral_code,
+    user_id: 'usr-cust-01',
+    user: MOCK_CUSTOMER_PROFILE,
+    provider_id: 'ctr-2',
+    provider: MOCK_CENTERS[1],
+    status: 'paid_out',
+    estimated_value: 2200,
+    commission_amount: 220, // 10%
+    claimed_at: '2026-08-12T11:00:00Z',
+    confirmed_at: '2026-08-13T16:00:00Z'
   }
 ];

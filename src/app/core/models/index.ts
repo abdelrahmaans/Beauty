@@ -1,4 +1,4 @@
-export type UserRole = 'customer' | 'admin' | 'provider';
+export type UserRole = 'customer' | 'admin' | 'provider' | 'center';
 export type DiscountType = 'percentage' | 'fixed';
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
@@ -9,6 +9,7 @@ export type BookingStatus = 'requested' | 'offered' | 'confirmed' | 'in_progress
 export type PayoutStatus = 'pending' | 'paid';
 export type PointsSource = 'order' | 'booking' | 'redemption' | 'manual';
 export type ReportStatus = 'open' | 'in_review' | 'resolved';
+export type RedemptionStatus = 'claimed' | 'confirmed_by_center' | 'rejected' | 'paid_out';
 
 export interface Profile {
   id: string;
@@ -161,21 +162,26 @@ export interface Provider {
   id: string;
   user_id: string;
   user?: Profile;
-  type: ProviderType;
+  type: ProviderType; // 'freelancer' | 'center'
   status: ProviderStatus;
   display_name: string;
   phone?: string;
   bio?: string;
   specialties: string[];
   city?: string;
+  address_line?: string;
   lat?: number;
   lng?: number;
   rating_avg: number;
   rating_count: number;
   is_available: boolean;
   avatar_url?: string;
+  photos?: string[];
+  opening_hours?: string;
+  center_services?: CenterService[];
+  referral_code?: ReferralCode;
   documents?: ProviderDocument[];
-  distance_km?: number; // Calculated dynamically during matching
+  distance_km?: number;
   created_at?: string;
 }
 
@@ -225,7 +231,7 @@ export interface Commission {
   booking_id: string;
   booking?: Booking;
   session_value: number;
-  commission_rate: number; // e.g. 15 (%)
+  commission_rate: number;
   commission_amount: number;
   payout_status: PayoutStatus;
   created_at: string;
@@ -239,4 +245,44 @@ export interface AppNotification {
   is_read: boolean;
   related_booking_id?: string;
   created_at: string;
+}
+
+// Phase 3: Partner Beauty Centers & Referral Tracking Models
+
+export interface CenterService {
+  id: string;
+  provider_id: string;
+  service_name: string;
+  description?: string;
+  price_from?: number;
+  price_to?: number;
+  is_active: boolean;
+  category?: string;
+}
+
+export interface ReferralCode {
+  id: string;
+  provider_id: string;
+  code: string;
+  discount_description?: string;
+  discount_percentage?: number;
+  commission_rate: number; // e.g. 10 (%)
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface ReferralRedemption {
+  id: string;
+  referral_code_id: string;
+  referral_code?: ReferralCode;
+  user_id: string;
+  user?: Profile;
+  provider_id: string;
+  provider?: Provider;
+  status: RedemptionStatus; // 'claimed' | 'confirmed_by_center' | 'rejected' | 'paid_out'
+  estimated_value?: number | null;
+  commission_amount?: number | null;
+  notes?: string;
+  claimed_at: string;
+  confirmed_at?: string | null;
 }

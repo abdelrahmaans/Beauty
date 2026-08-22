@@ -17,7 +17,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       <div class="container-custom banner-content">
         <div class="banner-item">
           <i class="fa-solid fa-sparkles"></i>
-          <span>منصة متكاملة: متجر منتجات أصلية + سوق جلسات العناية المنزلية في مصر</span>
+          <span>منصة بيوتي: متجر منتجات أصلية + جلسات منزلية + دليل وتخفيضات المراكز الشريكة</span>
         </div>
 
         <div class="banner-actions">
@@ -26,24 +26,33 @@ import { NotificationsService } from '../../../core/services/notifications.servi
             رصيدك: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة
           </span>
 
-          <!-- 3-Role Demo Switcher -->
+          <!-- 4-Role Demo Switcher -->
           <div class="demo-role-switcher">
             <button
               class="role-pill"
               [class.active]="auth.userRole() === 'customer'"
               (click)="auth.switchDemoRole('customer')"
-              title="تجربة كعميلة للمتجر والجلسات"
+              title="تجربة كعميلة للمتجر والجلسات والمراكز"
             >
-              <i class="fa-regular fa-user"></i> وضع العميلة
+              <i class="fa-regular fa-user"></i> العميلة
             </button>
 
             <button
               class="role-pill provider-pill"
               [class.active]="auth.userRole() === 'provider'"
               (click)="auth.switchDemoRole('provider')"
-              title="تجربة كأخصائية تجميل / فريلانسر"
+              title="تجربة كأخصائية تجميل فريلانسر"
             >
-              <i class="fa-solid fa-wand-magic-sparkles"></i> بوابة الأخصائية
+              <i class="fa-solid fa-wand-magic-sparkles"></i> الأخصائية
+            </button>
+
+            <button
+              class="role-pill center-pill"
+              [class.active]="auth.userRole() === 'center'"
+              (click)="auth.switchDemoRole('center')"
+              title="تجربة كمدير مركز تجميل شريك"
+            >
+              <i class="fa-solid fa-store"></i> المركز الشريك
             </button>
 
             <button
@@ -52,7 +61,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
               (click)="auth.switchDemoRole('admin')"
               title="تجربة كمديرة المنصة والترشيح"
             >
-              <i class="fa-solid fa-shield-halved"></i> وضع الأدمن
+              <i class="fa-solid fa-shield-halved"></i> الأدمن
             </button>
           </div>
         </div>
@@ -69,7 +78,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
           </div>
           <div class="logo-text">
             <span class="brand-title">BEAUTY</span>
-            <span class="brand-sub">متجر وجلسات العناية الفاخرة</span>
+            <span class="brand-sub">متجر وجلسات ومراكز العناية الفاخرة</span>
           </div>
         </a>
 
@@ -78,7 +87,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
           <input
             type="text"
-            placeholder="ابحثي عن شامبو، سيروم، واقي شمس، أو جلسات..."
+            placeholder="ابحثي عن منتجات أصلية، جلسات، أو مراكز تجميل..."
             [ngModel]="productsService.searchQuery()"
             (ngModelChange)="onSearch($event)"
             class="search-input"
@@ -99,16 +108,22 @@ import { NotificationsService } from '../../../core/services/notifications.servi
             الرئيسية
           </a>
           <a routerLink="/products" routerLinkActive="active" class="nav-item">
-            المتجر والمنتجات
+            المتجر
           </a>
           <a routerLink="/booking/request" routerLinkActive="active" class="nav-item home-service-link">
-            <i class="fa-solid fa-sparkles"></i> حجز جلسة منزلية
+            <i class="fa-solid fa-sparkles"></i> جلسات منزلية
+          </a>
+          <a routerLink="/centers" routerLinkActive="active" class="nav-item centers-link">
+            <i class="fa-solid fa-store"></i> دليل المراكز
           </a>
           <a routerLink="/booking/my-bookings" routerLinkActive="active" class="nav-item">
             جلساتي
           </a>
-          <a *ngIf="auth.isProvider() || auth.isAdmin()" routerLink="/provider" routerLinkActive="active" class="nav-item provider-nav-link">
+          <a *ngIf="auth.isProvider()" routerLink="/provider" routerLinkActive="active" class="nav-item provider-nav-link">
             <i class="fa-solid fa-id-badge"></i> بوابة الأخصائية
+          </a>
+          <a *ngIf="auth.isCenter()" routerLink="/center" routerLinkActive="active" class="nav-item center-nav-link">
+            <i class="fa-solid fa-store"></i> بوابة المركز
           </a>
           <a *ngIf="auth.isAdmin()" routerLink="/admin" routerLinkActive="active" class="nav-item admin-link">
             <i class="fa-solid fa-gauge-high"></i> لوحة التحكم
@@ -117,13 +132,11 @@ import { NotificationsService } from '../../../core/services/notifications.servi
 
         <!-- Header Actions -->
         <div class="header-actions">
-          <!-- User Profile / Account -->
           <a routerLink="/account" class="action-btn" title="حسابي">
             <i class="fa-regular fa-user"></i>
             <span class="action-label" *ngIf="auth.profile()">{{ auth.profile()?.full_name?.split(' ')?.[0] }}</span>
           </a>
 
-          <!-- Cart Button -->
           <button (click)="cart.toggleDrawer()" class="action-btn cart-btn" title="سلة التسوق">
             <i class="fa-solid fa-bag-shopping"></i>
             <span class="cart-badge" *ngIf="cart.totalItemsCount() > 0">
@@ -183,7 +196,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       border: none;
       color: rgba(255, 255, 255, 0.75);
       font-size: 0.72rem;
-      padding: 0.15rem 0.6rem;
+      padding: 0.15rem 0.55rem;
       border-radius: 9999px;
       cursor: pointer;
       font-family: inherit;
@@ -192,19 +205,10 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       align-items: center;
       gap: 0.25rem;
 
-      &.active {
-        background: #FFFFFF;
-        color: #1E1B18;
-        font-weight: 700;
-      }
-      &.provider-pill.active {
-        background: #10B981;
-        color: #FFFFFF;
-      }
-      &.admin-pill.active {
-        background: #C46D5B;
-        color: #FFFFFF;
-      }
+      &.active { background: #FFFFFF; color: #1E1B18; font-weight: 700; }
+      &.provider-pill.active { background: #10B981; color: #FFFFFF; }
+      &.center-pill.active { background: #D97706; color: #FFFFFF; }
+      &.admin-pill.active { background: #C46D5B; color: #FFFFFF; }
     }
 
     .main-header {
@@ -240,10 +244,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       font-size: 1.25rem;
       box-shadow: 0 4px 14px rgba(196, 109, 91, 0.35);
     }
-    .logo-text {
-      display: flex;
-      flex-direction: column;
-    }
+    .logo-text { display: flex; flex-direction: column; }
     .brand-title {
       font-family: var(--font-latin);
       font-weight: 800;
@@ -252,24 +253,15 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       color: var(--color-text-main);
       line-height: 1;
     }
-    .brand-sub {
-      font-size: 0.72rem;
-      color: var(--color-primary);
-      font-weight: 600;
-    }
+    .brand-sub { font-size: 0.72rem; color: var(--color-primary); font-weight: 600; }
     .search-box {
       flex: 1;
-      max-width: 420px;
+      max-width: 380px;
       position: relative;
       display: flex;
       align-items: center;
     }
-    .search-icon {
-      position: absolute;
-      right: 14px;
-      color: var(--color-text-subtle);
-      pointer-events: none;
-    }
+    .search-icon { position: absolute; right: 14px; color: var(--color-text-subtle); pointer-events: none; }
     .search-input {
       width: 100%;
       padding: 0.65rem 2.6rem 0.65rem 2rem;
@@ -277,104 +269,43 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       border: 1px solid transparent;
       border-radius: 9999px;
       font-family: inherit;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       color: var(--color-text-main);
       outline: none;
       transition: var(--transition-smooth);
 
-      &:focus {
-        background: #FFFFFF;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(196, 109, 91, 0.15);
-      }
+      &:focus { background: #FFFFFF; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(196, 109, 91, 0.15); }
     }
-    .clear-btn {
-      position: absolute;
-      left: 14px;
-      background: none;
-      border: none;
-      color: var(--color-text-subtle);
-      cursor: pointer;
-    }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+    .clear-btn { position: absolute; left: 14px; background: none; border: none; color: var(--color-text-subtle); cursor: pointer; }
+    .nav-links { display: flex; align-items: center; gap: 0.75rem; }
     .nav-item {
       text-decoration: none;
       color: var(--color-text-main);
       font-weight: 600;
-      font-size: 0.92rem;
-      padding: 0.4rem 0.65rem;
+      font-size: 0.9rem;
+      padding: 0.35rem 0.6rem;
       border-radius: 8px;
       transition: var(--transition-smooth);
 
-      &:hover, &.active {
-        color: var(--color-primary);
-        background: var(--color-primary-subtle);
-      }
-      &.home-service-link {
-        color: var(--color-secondary);
-        background: var(--color-secondary-light);
-        font-weight: 700;
-      }
-      &.provider-nav-link {
-        color: #15803D;
-        background: #DCFCE7;
-      }
-      &.admin-link {
-        color: #C46D5B;
-        background: var(--color-primary-light);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
+      &:hover, &.active { color: var(--color-primary); background: var(--color-primary-subtle); }
+      &.home-service-link { color: var(--color-secondary); background: var(--color-secondary-light); font-weight: 700; }
+      &.centers-link { color: #D97706; background: #FEF3C7; font-weight: 700; }
+      &.provider-nav-link { color: #15803D; background: #DCFCE7; }
+      &.center-nav-link { color: #B45309; background: #FEF3C7; }
+      &.admin-link { color: #C46D5B; background: var(--color-primary-light); }
     }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
     .action-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #FFFFFF;
-      border: 1.5px solid var(--color-border);
-      color: var(--color-text-main);
-      padding: 0.6rem 0.9rem;
-      border-radius: 9999px;
-      cursor: pointer;
-      text-decoration: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: var(--transition-smooth);
-      position: relative;
+      display: inline-flex; align-items: center; gap: 0.4rem; background: #FFFFFF; border: 1.5px solid var(--color-border);
+      color: var(--color-text-main); padding: 0.55rem 0.85rem; border-radius: 9999px; cursor: pointer; text-decoration: none; font-size: 0.88rem; font-weight: 600;
+      transition: var(--transition-smooth); position: relative;
 
-      &:hover {
-        border-color: var(--color-primary);
-        color: var(--color-primary);
-        background: var(--color-primary-subtle);
-      }
+      &:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-subtle); }
     }
-    .cart-btn { padding: 0.6rem 0.8rem; }
+    .cart-btn { padding: 0.55rem 0.75rem; }
     .cart-badge {
-      position: absolute;
-      top: -6px;
-      left: -6px;
-      background: var(--color-primary);
-      color: #ffffff;
-      font-size: 0.75rem;
-      font-weight: 700;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(196, 109, 91, 0.4);
+      position: absolute; top: -6px; left: -6px; background: var(--color-primary); color: #ffffff;
+      font-size: 0.75rem; font-weight: 700; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     }
   `]
 })

@@ -6,8 +6,10 @@ import { ProductsService } from '../../core/services/products.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { BookingsService } from '../../core/services/bookings.service';
 import { ProvidersService } from '../../core/services/providers.service';
+import { CentersService } from '../../core/services/centers.service';
+import { ReferralsService } from '../../core/services/referrals.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus } from '../../core/models';
+import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus, RedemptionStatus, ReferralRedemption } from '../../core/models';
 import { MOCK_COUPONS } from '../../core/mock/mock-data';
 
 @Component({
@@ -20,7 +22,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
         <!-- Admin Top Bar -->
         <div class="admin-topbar">
           <div>
-            <span class="badge-luxury">لوحة إدارة المتجر وسوق الجلسات المنزلية</span>
+            <span class="badge-luxury">لوحة إدارة المتجر + سوق الجلسات + دليل المراكز</span>
             <h1 class="admin-title">نظام التحكم والعمليات المركزي</h1>
           </div>
           <div class="admin-actions">
@@ -35,7 +37,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           <div class="metric-card beauty-card">
             <div class="metric-icon money"><i class="fa-solid fa-sack-dollar"></i></div>
             <div class="metric-info">
-              <span class="metric-label">إجمالي المبيعات (المتجر)</span>
+              <span class="metric-label">إجمالي مبيعات المتجر</span>
               <strong class="metric-val">{{ getTotalSales() }} <small>ج.م</small></strong>
               <span class="metric-sub text-success"><i class="fa-solid fa-arrow-trend-up"></i> طلبات المتجر</span>
             </div>
@@ -46,15 +48,15 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
             <div class="metric-info">
               <span class="metric-label">طلبات الجلسات المنزلية</span>
               <strong class="metric-val">{{ bookingsService.bookings().length }}</strong>
-              <span class="metric-sub text-warning">{{ bookingsService.pendingRequests().length }} طلبات جديدة تحتاج ترشيح</span>
+              <span class="metric-sub text-warning">{{ bookingsService.pendingRequests().length }} طلبات تحتاج ترشيح</span>
             </div>
           </div>
 
           <div class="metric-card beauty-card">
-            <div class="metric-icon products"><i class="fa-solid fa-user-check"></i></div>
+            <div class="metric-icon centers"><i class="fa-solid fa-store"></i></div>
             <div class="metric-info">
-              <span class="metric-label">الأخصائيات المعتمدات</span>
-              <strong class="metric-val">{{ providersService.providers().length }}</strong>
+              <span class="metric-label">المراكز الشريكة المعتمدة</span>
+              <strong class="metric-val">{{ centersService.centers().length }}</strong>
               <span class="metric-sub text-success">تغطية القاهرة، الجيزة وبني سويف</span>
             </div>
           </div>
@@ -62,9 +64,9 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           <div class="metric-card beauty-card">
             <div class="metric-icon users"><i class="fa-solid fa-percent"></i></div>
             <div class="metric-info">
-              <span class="metric-label">عمولات المنصة من الحجوزات</span>
-              <strong class="metric-val">{{ getBookingsCommission() }} <small>ج.م</small></strong>
-              <span class="metric-sub">نسبة 15% من كل جلسة مكتملة</span>
+              <span class="metric-label">عمولات المنصة (جلسات + مراكز)</span>
+              <strong class="metric-val">{{ getBookingsCommission() + referralsService.totalReferralCommissions() }} <small>ج.م</small></strong>
+              <span class="metric-sub">{{ referralsService.totalReferralCommissions() }} ج.م من إحالات المراكز</span>
             </div>
           </div>
         </div>
@@ -72,11 +74,18 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
         <!-- Dashboard Navigation Tabs -->
         <div class="dashboard-tabs">
           <button
-            class="tab-btn active-highlight"
+            class="tab-btn"
+            [class.active]="activeTab === 'centers_referrals'"
+            (click)="activeTab = 'centers_referrals'"
+          >
+            <i class="fa-solid fa-store"></i> دليل وإحالات المراكز الشريكة ({{ referralsService.redemptions().length }})
+          </button>
+          <button
+            class="tab-btn"
             [class.active]="activeTab === 'matching'"
             (click)="activeTab = 'matching'"
           >
-            <i class="fa-solid fa-wand-magic-sparkles"></i> طابور ترشيح ومطابقة الجلسات ({{ bookingsService.pendingRequests().length }})
+            <i class="fa-solid fa-wand-magic-sparkles"></i> طابور ترشيح الجلسات المنزلية ({{ bookingsService.pendingRequests().length }})
           </button>
           <button
             class="tab-btn"
@@ -90,7 +99,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
             [class.active]="activeTab === 'products'"
             (click)="activeTab = 'products'"
           >
-            <i class="fa-solid fa-tags"></i> إدارة المنتجات ({{ productsService.products().length }})
+            <i class="fa-solid fa-tags"></i> المنتجات والمخزون ({{ productsService.products().length }})
           </button>
           <button
             class="tab-btn"
@@ -108,7 +117,104 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           </button>
         </div>
 
-        <!-- Tab 1: Live Bookings Matching & Dispatching Queue -->
+        <!-- Tab: Phase 3 Partner Centers & Referral Tracking -->
+        <div class="tab-panel beauty-card animate-fade-in" *ngIf="activeTab === 'centers_referrals'">
+          <div class="panel-header">
+            <div>
+              <span class="badge-emerald">نظام تتبع الإحالات وعمولات المراكز (Phase 3)</span>
+              <h3 class="mt-1">سجل المراكز الشريكة وأكواد الإحالة والعمولات المستحقة</h3>
+            </div>
+          </div>
+
+          <!-- Audit Alert Box for long-pending claims -->
+          <div class="audit-alert-box" *ngIf="referralsService.pendingAuditAlerts().length > 0">
+            <i class="fa-solid fa-bell-ring"></i>
+            <div>
+              <strong>تنبيه تدقيق الإحالات (Audit Alert):</strong>
+              <p>يوجد {{ referralsService.pendingAuditAlerts().length }} أكواد خصم تمت المطالبة بها من العميلات وبانتظار تأكيد المراكز الشريكة.</p>
+            </div>
+          </div>
+
+          <!-- Redemptions Ledger Table -->
+          <h4 class="sub-table-title"><i class="fa-solid fa-receipt"></i> سجل استخدام أكواد الخصم والعمولات</h4>
+          <div class="table-responsive mb-4">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>رقم الإحالة</th>
+                  <th>المركز الشريك</th>
+                  <th>العميلة</th>
+                  <th>الكود المستخدم</th>
+                  <th>قيمة الفاتورة</th>
+                  <th>عمولة المنصة</th>
+                  <th>الحالة</th>
+                  <th>إجراء التسوية</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let rdm of referralsService.redemptions()">
+                  <td><strong>#{{ rdm.id }}</strong></td>
+                  <td>
+                    <strong>{{ rdm.provider?.display_name }}</strong>
+                    <small class="d-block text-muted">{{ rdm.provider?.city }}</small>
+                  </td>
+                  <td>{{ rdm.user?.full_name || 'سارة أحمد' }}</td>
+                  <td><span class="code-pill">{{ rdm.referral_code?.code }}</span></td>
+                  <td>
+                    <strong *ngIf="rdm.estimated_value">{{ rdm.estimated_value }} ج.م</strong>
+                    <span *ngIf="!rdm.estimated_value" class="text-muted">قيد المراجعة</span>
+                  </td>
+                  <td>
+                    <strong *ngIf="rdm.commission_amount" class="text-primary">{{ rdm.commission_amount }} ج.م</strong>
+                    <span *ngIf="!rdm.commission_amount" class="text-muted">—</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [ngClass]="'status-' + rdm.status">
+                      {{ getRedemptionStatusArabic(rdm.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      *ngIf="rdm.status === 'confirmed_by_center'"
+                      (click)="markPaidOut(rdm.id)"
+                      class="btn-primary btn-micro"
+                      title="تسوية وتحصيل العمولة"
+                    >
+                      <i class="fa-solid fa-circle-check"></i> تسجيل التحصيل
+                    </button>
+                    <span *ngIf="rdm.status === 'paid_out'" class="text-success text-xs">تم التحصيل ✓</span>
+                    <span *ngIf="rdm.status === 'claimed'" class="text-muted text-xs">بانتظار المركز</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Partner Centers Summary Cards -->
+          <h4 class="sub-table-title mt-4"><i class="fa-solid fa-store"></i> شبكة المراكز الشريكة المفعلة</h4>
+          <div class="centers-admin-cards-grid">
+            <div class="center-admin-card" *ngFor="let c of centersService.centers()">
+              <div class="ca-top">
+                <img [src]="c.avatar_url" class="ca-avatar" />
+                <div>
+                  <h4 class="ca-title">{{ c.display_name }}</h4>
+                  <span class="ca-city"><i class="fa-solid fa-location-dot"></i> {{ c.city }}</span>
+                  <div class="ca-rating">★ {{ c.rating_avg }} ({{ c.rating_count }} تقييم)</div>
+                </div>
+              </div>
+              <div class="ca-code-box" *ngIf="c.referral_code">
+                <span>كود الخصم: <strong>{{ c.referral_code.code }}</strong></span>
+                <span>نسبة العمولة: <strong>{{ c.referral_code.commission_rate }}%</strong></span>
+              </div>
+              <div class="ca-footer">
+                <span>{{ c.center_services?.length || 0 }} خدمات مدرجة</span>
+                <span class="badge-pill active">شريك نشط</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 1: Live Bookings Matching Queue (Phase 2) -->
         <div class="tab-panel beauty-card" *ngIf="activeTab === 'matching'">
           <div class="panel-header">
             <div>
@@ -117,18 +223,12 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
             </div>
           </div>
 
-          <div class="empty-state" *ngIf="bookingsService.bookings().length === 0">
-            <i class="fa-solid fa-calendar-check empty-icon"></i>
-            <h4>لا توجد طلبات جلسات منزلية حالياً</h4>
-          </div>
-
-          <div class="matching-queue-list" *ngIf="bookingsService.bookings().length > 0">
+          <div class="matching-queue-list">
             <div
               class="queue-booking-item"
               *ngFor="let bk of bookingsService.bookings()"
               [class.highlight-pending]="bk.status === 'requested'"
             >
-              <!-- Request Header Info -->
               <div class="q-top">
                 <div class="q-client-box">
                   <span class="q-id">طلب #{{ bk.id }}</span>
@@ -139,11 +239,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
                     <span><i class="fa-solid fa-location-dot"></i> {{ bk.requested_area }}</span>
                     <span><i class="fa-regular fa-clock"></i> {{ bk.scheduled_at | date:'medium' }}</span>
                   </div>
-                  <p class="q-notes" *ngIf="bk.notes">
-                    <i class="fa-regular fa-message"></i> ملاحظات العميلة: "{{ bk.notes }}"
-                  </p>
                 </div>
-
                 <div class="q-status-box">
                   <span class="status-pill" [ngClass]="'status-' + bk.status">
                     {{ getBookingStatusArabic(bk.status) }}
@@ -158,7 +254,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
               <div class="matching-engine-box" *ngIf="bk.status === 'requested'">
                 <div class="engine-header">
                   <i class="fa-solid fa-wand-magic-sparkles"></i>
-                  <strong>ترشيح النظام التلقائي (حسب التخصص والقرب الجغرافي والتقييم):</strong>
+                  <strong>ترشيح النظام التلقائي (حسب التخصص والقرب الجغرافي):</strong>
                 </div>
 
                 <div class="candidates-cards-grid">
@@ -174,13 +270,12 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
                       <div>
                         <strong>{{ cand.display_name }}</strong>
                         <span class="c-rating">★ {{ cand.rating_avg }} ({{ cand.rating_count }} جلسة)</span>
-                        <span class="c-dist"><i class="fa-solid fa-map-pin"></i> المسافة التقديرية: {{ cand.distance_km }} كم</span>
+                        <span class="c-dist"><i class="fa-solid fa-map-pin"></i> المسافة: {{ cand.distance_km }} كم</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Admin Action confirmation bar -->
                 <div class="admin-offer-confirm-bar">
                   <div class="price-input-box">
                     <label>السعر النهائي للجلسة (ج.م):</label>
@@ -191,17 +286,12 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
                       class="input-custom price-input"
                     />
                   </div>
-
-                  <button
-                    (click)="confirmAndDispatchOffer(bk.id)"
-                    class="btn-primary dispatch-btn"
-                  >
+                  <button (click)="confirmAndDispatchOffer(bk.id)" class="btn-primary dispatch-btn">
                     <i class="fa-solid fa-paper-plane"></i> اعتماد وترشيح الأخصائية وإرسال العرض للعميلة
                   </button>
                 </div>
               </div>
 
-              <!-- Current Assigned Provider Preview if already offered or confirmed -->
               <div class="assigned-provider-bar" *ngIf="bk.provider && bk.status !== 'requested'">
                 <div class="ap-info">
                   <img [src]="bk.provider.avatar_url" class="ap-avatar" />
@@ -212,11 +302,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
                 </div>
                 <div class="admin-quick-status">
                   <label>تحديث الحالة:</label>
-                  <select
-                    [ngModel]="bk.status"
-                    (ngModelChange)="onUpdateBookingStatus(bk.id, $event)"
-                    class="status-select"
-                  >
+                  <select [ngModel]="bk.status" (ngModelChange)="onUpdateBookingStatus(bk.id, $event)" class="status-select">
                     <option value="offered">تم إرسال العرض</option>
                     <option value="confirmed">تم التأكيد والدفع</option>
                     <option value="in_progress">الجلسة جارية</option>
@@ -245,11 +331,9 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
                   <span class="pa-city"><i class="fa-solid fa-location-dot"></i> {{ p.city }}</span>
                 </div>
               </div>
-
               <div class="pa-specialties">
                 <span class="sp-chip" *ngFor="let s of p.specialties">{{ s }}</span>
               </div>
-
               <div class="pa-docs" *ngIf="p.documents && p.documents.length > 0">
                 <span class="docs-lbl">مستندات التوثيق:</span>
                 <div class="doc-item" *ngFor="let d of p.documents">
@@ -361,11 +445,7 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
                     </span>
                   </td>
                   <td>
-                    <select
-                      [ngModel]="ord.status"
-                      (ngModelChange)="onUpdateStatus(ord.id, $event)"
-                      class="status-select"
-                    >
+                    <select [ngModel]="ord.status" (ngModelChange)="onUpdateStatus(ord.id, $event)" class="status-select">
                       <option value="pending">قيد الانتظار</option>
                       <option value="confirmed">تم التأكيد</option>
                       <option value="shipped">تم الشحن</option>
@@ -484,34 +564,16 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
 
       &.money { background: #DCFCE7; color: #15803D; }
       &.orders { background: #DBEAFE; color: #1D4ED8; }
-      &.products { background: #FEF3C7; color: #B45309; }
+      &.centers { background: #FEF3C7; color: #B45309; }
       &.users { background: #F3E8FF; color: #7E22CE; }
     }
-    .metric-info {
-      display: flex;
-      flex-direction: column;
-    }
-    .metric-label {
-      font-size: 0.82rem;
-      color: var(--color-text-muted);
-      font-weight: 600;
-    }
+    .metric-info { display: flex; flex-direction: column; }
+    .metric-label { font-size: 0.82rem; color: var(--color-text-muted); font-weight: 600; }
     .metric-val {
-      font-size: 1.65rem;
-      font-weight: 900;
-      color: var(--color-text-main);
-      line-height: 1.2;
-      margin: 0.2rem 0;
-
+      font-size: 1.65rem; font-weight: 900; color: var(--color-text-main); line-height: 1.2; margin: 0.2rem 0;
       small { font-size: 0.95rem; }
     }
-    .metric-sub {
-      font-size: 0.75rem;
-      color: var(--color-text-subtle);
-
-      &.text-success { color: #10B981; font-weight: 700; }
-      &.text-warning { color: #EA580C; font-weight: 700; }
-    }
+    .metric-sub { font-size: 0.75rem; color: var(--color-text-subtle); }
 
     .dashboard-tabs {
       display: flex;
@@ -542,159 +604,99 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
         border-color: var(--color-primary);
         box-shadow: 0 4px 14px rgba(196, 109, 91, 0.3);
       }
-      &.active-highlight {
-        border-color: var(--color-primary);
-      }
     }
 
-    .tab-panel {
-      padding: 1.75rem 2rem;
-    }
+    .tab-panel { padding: 1.75rem 2rem; }
     .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
       h3 { font-size: 1.25rem; font-weight: 800; }
     }
     .mt-1 { margin-top: 0.35rem; }
+    .mt-4 { margin-top: 2rem; }
+    .mb-4 { margin-bottom: 2rem; }
+    .sub-table-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+    .audit-alert-box {
+      display: flex; align-items: center; gap: 1rem; background: #FFFBEB; border: 1px solid #FDE68A; padding: 1rem 1.25rem; border-radius: 14px; color: #92400E; margin-bottom: 1.5rem;
+      i { font-size: 1.3rem; }
+      strong { font-size: 0.9rem; display: block; }
+      p { font-size: 0.8rem; margin: 0; }
+    }
+
+    .code-pill { background: #FAF7F5; border: 1px solid var(--color-border); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 800; letter-spacing: 1px; }
+    .centers-admin-cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;
+    }
+    .center-admin-card {
+      border: 1px solid var(--color-border); border-radius: 16px; padding: 1.25rem; background: #FAF7F5;
+    }
+    .ca-top { display: flex; gap: 0.85rem; align-items: center; margin-bottom: 0.75rem; }
+    .ca-avatar { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; }
+    .ca-title { font-size: 1rem; font-weight: 800; margin: 0; }
+    .ca-city { font-size: 0.75rem; color: var(--color-text-subtle); display: block; }
+    .ca-rating { font-size: 0.78rem; color: #D97706; font-weight: 700; }
+    .ca-code-box {
+      display: flex; justify-content: space-between; font-size: 0.8rem; background: #fff; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px dashed var(--color-border); margin-bottom: 0.75rem;
+    }
+    .ca-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--color-text-subtle); }
+
+    /* Tables & Modals */
+    .table-responsive { overflow-x: auto; }
+    .custom-table {
+      width: 100%; border-collapse: collapse; text-align: right;
+      th { padding: 0.85rem 1rem; background: #FAF7F5; color: var(--color-text-muted); font-size: 0.82rem; font-weight: 700; border-bottom: 1.5px solid var(--color-border); }
+      td { padding: 1rem; border-bottom: 1px solid var(--color-border-light); font-size: 0.88rem; vertical-align: middle; }
+    }
+    .table-product-cell { display: flex; align-items: center; gap: 0.85rem; }
+    .t-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; }
+    .text-strike { text-decoration: line-through; color: var(--color-text-subtle); font-size: 0.78rem; margin-right: 0.4rem; }
+    .stock-pill { background: #EBF5F0; color: #15803D; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.55rem; border-radius: 9999px; &.danger { background: #FEE2E2; color: #B91C1C; } }
+    .rating-badge { color: #D97706; font-weight: 700; font-size: 0.85rem; }
+    .status-pill {
+      font-size: 0.78rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px;
+      &.active, &.status-confirmed, &.status-confirmed_by_center { background: #DCFCE7; color: #15803D; }
+      &.status-claimed { background: #FEF3C7; color: #92400E; }
+      &.status-paid_out { background: #E0E7FF; color: #4338CA; }
+      &.disabled, &.status-rejected { background: #FEE2E2; color: #B91C1C; }
+    }
+    .row-actions { display: flex; gap: 0.5rem; }
+    .action-icon { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--color-border); background: #FFFFFF; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition-smooth); &.edit:hover { color: var(--color-primary); border-color: var(--color-primary); } &.delete:hover { color: #EF4444; border-color: #EF4444; } }
+    .status-select { padding: 0.35rem 0.65rem; border: 1px solid var(--color-border); border-radius: 8px; font-family: inherit; font-size: 0.82rem; cursor: pointer; }
+    .table-search-input { padding: 0.5rem 1rem; border: 1px solid var(--color-border); border-radius: 9999px; font-family: inherit; font-size: 0.85rem; width: 280px; outline: none; }
+    .btn-micro { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
+    .text-xs { font-size: 0.75rem; }
 
     /* Matching Queue */
-    .matching-queue-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1.75rem;
-    }
-    .queue-booking-item {
-      border: 1px solid var(--color-border);
-      border-radius: 18px;
-      padding: 1.5rem;
-      background: #FAF7F5;
-
-      &.highlight-pending {
-        border-color: var(--color-primary);
-        background: #FFFDFB;
-        box-shadow: 0 4px 18px rgba(196, 109, 91, 0.1);
-      }
-    }
-    .q-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1.25rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
+    .matching-queue-list { display: flex; flex-direction: column; gap: 1.75rem; }
+    .queue-booking-item { border: 1px solid var(--color-border); border-radius: 18px; padding: 1.5rem; background: #FAF7F5; &.highlight-pending { border-color: var(--color-primary); background: #FFFDFB; box-shadow: 0 4px 18px rgba(196, 109, 91, 0.1); } }
+    .q-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
     .q-id { font-size: 0.8rem; color: var(--color-text-subtle); }
     .q-srv { font-size: 1.15rem; font-weight: 800; color: var(--color-text-main); margin: 0.2rem 0 0.5rem; }
-    .q-meta {
-      display: flex;
-      gap: 1.25rem;
-      font-size: 0.85rem;
-      color: var(--color-text-muted);
-      flex-wrap: wrap;
-      i { color: var(--color-primary); }
-    }
-    .q-notes {
-      margin-top: 0.5rem;
-      font-size: 0.82rem;
-      color: #92400E;
-      background: #FFFBEB;
-      padding: 0.4rem 0.85rem;
-      border-radius: 8px;
-      display: inline-block;
-    }
+    .q-meta { display: flex; gap: 1.25rem; font-size: 0.85rem; color: var(--color-text-muted); flex-wrap: wrap; i { color: var(--color-primary); } }
     .q-status-box { text-align: left; }
     .q-price { margin-top: 0.35rem; font-size: 0.85rem; strong { font-size: 1.1rem; color: var(--color-primary); } }
 
-    .matching-engine-box {
-      background: #FFFFFF;
-      border: 1.5px dashed var(--color-border);
-      border-radius: 14px;
-      padding: 1.25rem;
-      margin-top: 1rem;
-    }
-    .engine-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.9rem;
-      color: var(--color-primary);
-      margin-bottom: 1rem;
-    }
-    .candidates-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.25rem;
-    }
-    .candidate-card {
-      border: 1.5px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1rem;
-      cursor: pointer;
-      background: #FAF7F5;
-      transition: var(--transition-smooth);
-
-      &:hover { border-color: var(--color-primary); }
-      &.selected {
-        border-color: var(--color-primary);
-        background: var(--color-primary-subtle);
-        box-shadow: 0 4px 12px rgba(196, 109, 91, 0.15);
-      }
-    }
+    .matching-engine-box { background: #FFFFFF; border: 1.5px dashed var(--color-border); border-radius: 14px; padding: 1.25rem; margin-top: 1rem; }
+    .engine-header { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--color-primary); margin-bottom: 1rem; }
+    .candidates-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+    .candidate-card { border: 1.5px solid var(--color-border); border-radius: 12px; padding: 1rem; cursor: pointer; background: #FAF7F5; transition: var(--transition-smooth); &:hover { border-color: var(--color-primary); } &.selected { border-color: var(--color-primary); background: var(--color-primary-subtle); box-shadow: 0 4px 12px rgba(196, 109, 91, 0.15); } }
     .c-rank-badge { font-size: 0.72rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.4rem; }
     .c-profile { display: flex; gap: 0.75rem; align-items: center; }
     .c-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
     .c-rating { font-size: 0.78rem; color: #D97706; font-weight: 700; display: block; }
     .c-dist { font-size: 0.75rem; color: var(--color-text-subtle); display: block; }
-
-    .admin-offer-confirm-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 1rem;
-      border-top: 1px solid var(--color-border-light);
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .price-input-box {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      label { font-size: 0.88rem; font-weight: 700; }
-    }
+    .admin-offer-confirm-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--color-border-light); flex-wrap: wrap; gap: 1rem; }
+    .price-input-box { display: flex; align-items: center; gap: 0.75rem; label { font-size: 0.88rem; font-weight: 700; } }
     .price-input { width: 140px; padding: 0.45rem 0.75rem; font-weight: 800; color: var(--color-primary); }
-
-    .assigned-provider-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #FFFFFF;
-      padding: 0.85rem 1.25rem;
-      border-radius: 12px;
-      margin-top: 0.85rem;
-    }
+    .assigned-provider-bar { display: flex; justify-content: space-between; align-items: center; background: #FFFFFF; padding: 0.85rem 1.25rem; border-radius: 12px; margin-top: 0.85rem; }
     .ap-info { display: flex; align-items: center; gap: 0.75rem; }
     .ap-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
     .ap-lbl { font-size: 0.78rem; color: var(--color-text-subtle); margin-left: 0.35rem; }
     .admin-quick-status { display: flex; align-items: center; gap: 0.5rem; label { font-size: 0.82rem; } }
 
     /* Provider Verification Tab */
-    .providers-admin-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-    .provider-admin-card {
-      border: 1px solid var(--color-border);
-      border-radius: 16px;
-      padding: 1.25rem;
-      background: #FAF7F5;
-    }
+    .providers-admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .provider-admin-card { border: 1px solid var(--color-border); border-radius: 16px; padding: 1.25rem; background: #FAF7F5; }
     .pa-header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
     .pa-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
     .pa-name { font-size: 1.05rem; font-weight: 800; margin: 0.2rem 0; }
@@ -703,30 +705,8 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
     .sp-chip { font-size: 0.72rem; background: #FFFFFF; border: 1px solid var(--color-border); padding: 0.2rem 0.5rem; border-radius: 9999px; }
     .pa-docs { border-top: 1px solid var(--color-border-light); padding-top: 0.75rem; }
     .docs-lbl { font-size: 0.78rem; font-weight: 700; color: var(--color-text-muted); display: block; margin-bottom: 0.4rem; }
-    .doc-item {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-      background: #FFFFFF; padding: 0.45rem 0.75rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.35rem;
-    }
+    .doc-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: #FFFFFF; padding: 0.45rem 0.75rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.35rem; }
     .doc-badge { font-size: 0.72rem; color: #D97706; &.verified { color: #15803D; font-weight: 700; } }
-    .btn-micro { background: var(--color-primary); color: #fff; border: none; border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.72rem; cursor: pointer; }
-
-    /* Tables */
-    .table-responsive { overflow-x: auto; }
-    .custom-table {
-      width: 100%; border-collapse: collapse; text-align: right;
-      th { padding: 0.85rem 1rem; background: #FAF7F5; color: var(--color-text-muted); font-size: 0.82rem; font-weight: 700; border-bottom: 1.5px solid var(--color-border); }
-      td { padding: 1rem; border-bottom: 1px solid var(--color-border-light); font-size: 0.9rem; vertical-align: middle; }
-    }
-    .table-product-cell { display: flex; align-items: center; gap: 0.85rem; }
-    .t-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; }
-    .text-strike { text-decoration: line-through; color: var(--color-text-subtle); font-size: 0.78rem; margin-right: 0.4rem; }
-    .stock-pill { background: #EBF5F0; color: #15803D; font-weight: 700; font-size: 0.8rem; padding: 0.2rem 0.55rem; border-radius: 9999px; &.danger { background: #FEE2E2; color: #B91C1C; } }
-    .rating-badge { color: #D97706; font-weight: 700; font-size: 0.85rem; }
-    .status-pill { font-size: 0.78rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; &.active { background: #DCFCE7; color: #15803D; } &.disabled { background: #F3F4F6; color: #6B7280; } }
-    .row-actions { display: flex; gap: 0.5rem; }
-    .action-icon { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--color-border); background: #FFFFFF; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition-smooth); &.edit:hover { color: var(--color-primary); border-color: var(--color-primary); } &.delete:hover { color: #EF4444; border-color: #EF4444; } }
-    .status-select { padding: 0.35rem 0.65rem; border: 1px solid var(--color-border); border-radius: 8px; font-family: inherit; font-size: 0.82rem; cursor: pointer; }
-    .table-search-input { padding: 0.5rem 1rem; border: 1px solid var(--color-border); border-radius: 9999px; font-family: inherit; font-size: 0.85rem; width: 280px; outline: none; }
 
     /* Coupons */
     .coupons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
@@ -753,9 +733,11 @@ export class AdminComponent {
   ordersService = inject(OrdersService);
   bookingsService = inject(BookingsService);
   providersService = inject(ProvidersService);
+  centersService = inject(CentersService);
+  referralsService = inject(ReferralsService);
   auth = inject(AuthService);
 
-  activeTab: 'matching' | 'providers' | 'products' | 'orders' | 'coupons' = 'matching';
+  activeTab: 'centers_referrals' | 'matching' | 'providers' | 'products' | 'orders' | 'coupons' = 'centers_referrals';
   productSearch: string = '';
   couponsList: Coupon[] = MOCK_COUPONS;
 
@@ -806,6 +788,10 @@ export class AdminComponent {
     await this.providersService.verifyDocument(providerId, docId);
   }
 
+  async markPaidOut(redemptionId: string): Promise<void> {
+    await this.referralsService.markAsPaidOut(redemptionId);
+  }
+
   getAdminFilteredProducts(): Product[] {
     const q = this.productSearch.trim().toLowerCase();
     if (!q) return this.productsService.products();
@@ -834,6 +820,16 @@ export class AdminComponent {
       completed: 'مكتملة',
       cancelled: 'ملغية',
       reported: 'بلاغ قيد المراجعة'
+    };
+    return map[status] || status;
+  }
+
+  getRedemptionStatusArabic(status: RedemptionStatus): string {
+    const map: Record<RedemptionStatus, string> = {
+      claimed: 'كود ساري (بانتظار المركز)',
+      confirmed_by_center: 'مؤكد من المركز ✓',
+      paid_out: 'تم التحصيل والتسوية',
+      rejected: 'مرفوض'
     };
     return map[status] || status;
   }

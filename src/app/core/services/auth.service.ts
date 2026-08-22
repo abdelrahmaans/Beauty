@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { Profile, UserRole } from '../models';
-import { MOCK_CUSTOMER_PROFILE, MOCK_ADMIN_PROFILE, MOCK_PROVIDER_PROFILE } from '../mock/mock-data';
+import { MOCK_CUSTOMER_PROFILE, MOCK_ADMIN_PROFILE, MOCK_PROVIDER_PROFILE, MOCK_CENTER_PROFILE } from '../mock/mock-data';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +23,7 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this._profile());
   readonly isAdmin = computed(() => this._profile()?.role === 'admin');
   readonly isProvider = computed(() => this._profile()?.role === 'provider');
+  readonly isCenter = computed(() => this._profile()?.role === 'center');
   readonly userRole = computed<UserRole>(() => this._profile()?.role ?? 'customer');
   readonly loyaltyPoints = computed(() => this._profile()?.loyalty_points ?? 0);
 
@@ -49,7 +50,6 @@ export class AuthService {
         }
       });
     } else {
-      // Check localStorage for offline demo auth
       const savedProfile = localStorage.getItem('beauty_demo_profile');
       if (savedProfile) {
         try {
@@ -99,13 +99,15 @@ export class AuthService {
         return { success: false, error: err.message || 'حدث خطأ أثناء تسجيل الدخول' };
       }
     } else {
-      // Demo authentication simulation
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 250));
       this._isLoading.set(false);
 
       if (email.includes('admin')) {
         this._profile.set(MOCK_ADMIN_PROFILE);
         localStorage.setItem('beauty_demo_profile', JSON.stringify(MOCK_ADMIN_PROFILE));
+      } else if (email.includes('center') || email.includes('letoile')) {
+        this._profile.set(MOCK_CENTER_PROFILE);
+        localStorage.setItem('beauty_demo_profile', JSON.stringify(MOCK_CENTER_PROFILE));
       } else if (email.includes('provider') || email.includes('omneya')) {
         this._profile.set(MOCK_PROVIDER_PROFILE);
         localStorage.setItem('beauty_demo_profile', JSON.stringify(MOCK_PROVIDER_PROFILE));
@@ -142,7 +144,7 @@ export class AuthService {
         return { success: false, error: err.message || 'فشل في إنشاء الحساب' };
       }
     } else {
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 250));
       const newProfile: Profile = {
         id: 'usr-' + Date.now(),
         full_name: fullName,
@@ -168,11 +170,13 @@ export class AuthService {
     localStorage.removeItem('beauty_demo_profile');
   }
 
-  // Quick switch for demo/testing between Customer, Provider, and Admin
-  switchDemoRole(role: 'admin' | 'customer' | 'provider'): void {
+  // 4-Role Demo Switcher (Customer, Specialist, Partner Center, Admin)
+  switchDemoRole(role: 'admin' | 'customer' | 'provider' | 'center'): void {
     let target: Profile;
     if (role === 'admin') {
       target = MOCK_ADMIN_PROFILE;
+    } else if (role === 'center') {
+      target = MOCK_CENTER_PROFILE;
     } else if (role === 'provider') {
       target = MOCK_PROVIDER_PROFILE;
     } else {

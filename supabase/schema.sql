@@ -294,8 +294,68 @@ for each row execute function update_provider_rating();
 
 
 -- =============================================================================
--- 4. GEO-DISTANCE & PROVIDER MATCHING FUNCTION
+-- 4. PHASE 3 TABLES (BEAUTY CENTERS DIRECTORY & REFERRAL TRACKING)
 -- =============================================================================
+
+-- CENTER SERVICES (Offered by beauty centers with price ranges)
+create table if not exists center_services (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references providers(id) on delete cascade,
+  service_name text not null,
+  description text,
+  price_from numeric(10,2),
+  price_to numeric(10,2),
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- REFERRAL CODES (Unique per center with commission rate)
+create table if not exists referral_codes (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references providers(id) on delete cascade,
+  code text not null unique,
+  discount_description text,
+  commission_rate numeric(5,2) not null default 10.00, -- e.g. 10%
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- REFERRAL REDEMPTIONS (Tracking customer claims & center confirmations)
+create type redemption_status as enum ('claimed', 'confirmed_by_center', 'rejected', 'paid_out');
+
+create table if not exists referral_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  referral_code_id uuid not null references referral_codes(id) on delete cascade,
+  user_id uuid not null references profiles(id),
+  provider_id uuid not null references providers(id),
+  status redemption_status not null default 'claimed',
+  estimated_value numeric(10,2),
+  commission_amount numeric(10,2),
+  notes text,
+  claimed_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+
+-- Trigger: Calculate referral commission automatically upon center confirmation
+create or replace function calculate_referral_commission()
+returns trigger language plpgsql as $$
+declare
+  v_rate numeric;
+begin
+  if new.status = 'confirmed_by_center' and (old.status is distinct from 'confirmed_by_center') then
+    select commission_rate into v_rate from referral_codes where id = new.referral_code_id;
+    new.commission_amount := coalesce(new.estimated_value, 0) * (coalesce(v_rate, 10.00) / 100);
+    new.confirmed_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_calculate_referral_commission on referral_redemptions;
+create trigger trg_calculate_referral_commission
+before update on referral_redemptions
+for each row execute function calculate_referral_commission();
+
 create or replace function suggest_providers_for_booking(
   p_service_type text,
   p_lat double precision,

@@ -2,7 +2,7 @@ export type UserRole = 'customer' | 'admin' | 'provider' | 'center';
 export type DiscountType = 'percentage' | 'fixed';
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
-export type PaymentMethod = 'cash_on_delivery' | 'card' | 'wallet';
+export type PaymentMethod = 'cash_on_delivery' | 'card' | 'wallet' | 'manual_transfer';
 export type ProviderType = 'freelancer' | 'center';
 export type ProviderStatus = 'pending' | 'verified' | 'trusted' | 'suspended';
 export type BookingStatus = 'requested' | 'offered' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'reported';
@@ -12,6 +12,10 @@ export type ReportStatus = 'open' | 'in_review' | 'resolved';
 export type RedemptionStatus = 'claimed' | 'confirmed_by_center' | 'rejected' | 'paid_out';
 export type BannerType = 'coupon' | 'announcement';
 export type BannerPlacement = 'homepage';
+
+export type PaymentReferenceType = 'order' | 'booking';
+export type PaymentProofStatus = 'pending_review' | 'approved' | 'rejected';
+export type PaymentChannel = 'bank_transfer' | 'instapay' | 'vodafone_cash' | 'other';
 
 export interface Profile {
   id: string;
@@ -293,8 +297,8 @@ export interface ReferralRedemption {
 
 export interface Banner {
   id: string;
-  type: BannerType; // 'coupon' | 'announcement'
-  placement: BannerPlacement; // 'homepage'
+  type: BannerType;
+  placement: BannerPlacement;
   title: string;
   subtitle?: string;
   image_storage_path: string;
@@ -308,4 +312,23 @@ export interface Banner {
   sort_order: number;
   created_at?: string;
   updated_at?: string;
+}
+
+// Phase 5: Manual Payment Proofs Model
+
+export interface PaymentProof {
+  id: string;
+  reference_type: PaymentReferenceType; // 'order' | 'booking'
+  reference_id: string;
+  user_id: string;
+  user?: Profile;
+  channel: PaymentChannel; // 'bank_transfer' | 'instapay' | 'vodafone_cash' | 'other'
+  sender_name?: string;
+  amount_claimed: number;
+  receipt_storage_path: string;
+  status: PaymentProofStatus; // 'pending_review' | 'approved' | 'rejected'
+  admin_note?: string;
+  reviewed_by?: string;
+  reviewed_at?: string | null;
+  created_at: string;
 }

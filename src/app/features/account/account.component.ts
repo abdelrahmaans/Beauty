@@ -4,7 +4,8 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService } from '../../core/services/orders.service';
-import { OrderStatus } from '../../core/models';
+import { PaymentProofsService } from '../../core/services/payment-proofs.service';
+import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
 
 @Component({
   selector: 'app-account',
@@ -80,6 +81,12 @@ import { OrderStatus } from '../../core/models';
                 </div>
               </div>
 
+              <!-- Payment Proof status banner for manual orders -->
+              <div class="account-order-proof-box" *ngIf="getOrderProof(order.id)?.status === 'pending_review'">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>تم إرسال إيصال التحويل بمبلغ {{ getOrderProof(order.id)?.amount_claimed }} ج.م عبر ({{ getOrderProof(order.id)?.channel }}) — جاري التحقق من الإدارة لتأكيد الشحن فوراً.</span>
+              </div>
+
               <!-- Order Items preview -->
               <div class="order-card-body">
                 <div class="order-items-grid">
@@ -108,8 +115,8 @@ import { OrderStatus } from '../../core/models';
               <!-- Footer with total -->
               <div class="order-card-footer">
                 <div class="payment-info">
-                  <i class="fa-solid fa-credit-card"></i>
-                  <span>طريقة الدفع: {{ order.payment_method === 'cash_on_delivery' ? 'كاش عند الاستلام' : 'دفع إلكتروني' }}</span>
+                  <i class="fa-solid" [ngClass]="order.payment_method === 'manual_transfer' ? 'fa-bolt text-indigo' : 'fa-credit-card'"></i>
+                  <span>طريقة الدفع: {{ getPaymentMethodArabic(order.payment_method) }}</span>
                 </div>
                 <div class="order-total-price">
                   <span>الإجمالي:</span>
@@ -445,6 +452,20 @@ import { OrderStatus } from '../../core/models';
       font-size: 0.88rem;
       font-weight: 700;
     }
+    .account-order-proof-box {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+      font-size: 0.82rem;
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      margin: 0.75rem 1.5rem 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      i { color: #D97706; }
+    }
+    .text-indigo { color: #6366F1 !important; }
     .empty-orders {
       text-align: center;
       padding: 4rem 2rem;
@@ -461,6 +482,7 @@ import { OrderStatus } from '../../core/models';
 export class AccountComponent {
   auth = inject(AuthService);
   ordersService = inject(OrdersService);
+  paymentProofsService = inject(PaymentProofsService);
 
   activeTab: 'orders' | 'profile' = 'orders';
 
@@ -483,6 +505,20 @@ export class AccountComponent {
 
   getStatusClass(status: OrderStatus): string {
     return `status-${status}`;
+  }
+
+  getOrderProof(orderId: string): PaymentProof | undefined {
+    return this.paymentProofsService.getProofForReference('order', orderId);
+  }
+
+  getPaymentMethodArabic(method: PaymentMethod): string {
+    const map: Record<PaymentMethod, string> = {
+      cash_on_delivery: 'كاش عند الاستلام (COD)',
+      manual_transfer: 'تحويل مباشر (InstaPay / فودافون كاش / بنكي)',
+      card: 'بطاقة بنكية / فيزا أو ماستركارد',
+      wallet: 'محفظة إلكترونية'
+    };
+    return map[method] || method;
   }
 
   saveProfile(): void {

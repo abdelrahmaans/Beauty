@@ -4,12 +4,14 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BookingsService } from '../../../core/services/bookings.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Booking, BookingStatus } from '../../../core/models';
+import { PaymentProofsService } from '../../../core/services/payment-proofs.service';
+import { Booking, BookingStatus, PaymentProof } from '../../../core/models';
+import { UploadPaymentProofComponent } from '../../payment/upload-payment-proof/upload-payment-proof.component';
 
 @Component({
   selector: 'app-my-bookings',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, UploadPaymentProofComponent],
   template: `
     <div class="my-bookings-page">
       <div class="container-custom">
@@ -91,10 +93,31 @@ import { Booking, BookingStatus } from '../../../core/models';
                   <span class="pay-status paid" *ngIf="b.payment_status === 'paid'">
                     <i class="fa-solid fa-circle-check"></i> تم الدفع أونلاين
                   </span>
-                  <span class="pay-status unpaid" *ngIf="b.payment_status === 'unpaid'">
+                  <span class="pay-status unpaid" *ngIf="b.payment_status === 'unpaid' && getBookingProof(b.id)?.status !== 'pending_review'">
                     بانتظار التأكيد والدفع
                   </span>
+                  <span class="pay-status pending-review" *ngIf="getBookingProof(b.id)?.status === 'pending_review'">
+                    <i class="fa-solid fa-clock"></i> إيصال التحويل قيد المراجعة
+                  </span>
                 </div>
+              </div>
+
+              <!-- Payment Proof Review Alerts -->
+              <div class="pending-proof-alert" *ngIf="getBookingProof(b.id)?.status === 'pending_review'">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <div>
+                  <strong>بانتظار مراجعة إيصال التحويل (قيد التدقيق من الإدارة)</strong>
+                  <p>تم استلام صورة الإيصال بمبلغ {{ getBookingProof(b.id)?.amount_claimed }} ج.م، وتراجع الإدارة التحويل لتأكيد الحجز فوراً.</p>
+                </div>
+              </div>
+
+              <div class="rejected-proof-alert" *ngIf="getBookingProof(b.id)?.status === 'rejected'">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="flex-1">
+                  <strong>تم رفض إيصال التحويل السابق:</strong>
+                  <p>{{ getBookingProof(b.id)?.admin_note || 'بيانات التحويل غير مطابقة، يرجى رفع إيصال واضح وصحيح.' }}</p>
+                </div>
+                <button (click)="openOfferModal(b)" class="btn-primary btn-micro">إعادة الرفع</button>
               </div>
 
               <!-- Waiting for Admin matching notice -->
@@ -118,10 +141,14 @@ import { Booking, BookingStatus } from '../../../core/models';
             <div class="b-card-footer">
               <!-- If Offered: Customer can Accept & Pay -->
               <div class="action-row" *ngIf="b.status === 'offered'">
-                <span class="offer-alert">
+                <span class="offer-alert" *ngIf="getBookingProof(b.id)?.status !== 'pending_review'">
                   <i class="fa-solid fa-bell"></i> تم إعداد العرض الخاص بكِ!
                 </span>
-                <button (click)="openOfferModal(b)" class="btn-primary pay-btn">
+                <span class="offer-alert pending" *ngIf="getBookingProof(b.id)?.status === 'pending_review'">
+                  <i class="fa-solid fa-hourglass-half"></i> الإيصال قيد المراجعة لدى الإدارة
+                </span>
+
+                <button (click)="openOfferModal(b)" class="btn-primary pay-btn" *ngIf="getBookingProof(b.id)?.status !== 'pending_review'">
                   <i class="fa-solid fa-credit-card"></i> مراجعة العرض وتأكيد الدفع ({{ b.agreed_price }} ج.م)
                 </button>
               </div>
@@ -138,28 +165,19 @@ import { Booking, BookingStatus } from '../../../core/models';
 
               <!-- If In Progress -->
               <div class="action-row" *ngIf="b.status === 'in_progress'">
-                <span class="in-progress-msg">
-                  <i class="fa-solid fa-spa fa-beat"></i> الجلسة جارية حالياً... نتمنى لكِ وقتاً ممتعاً!
+                <span class="inprogress-msg">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> الجلسة جارية الآن مع الأخصائية {{ b.provider?.display_name }}
                 </span>
               </div>
 
               <!-- If Completed: Rate or Report -->
               <div class="action-row" *ngIf="b.status === 'completed'">
                 <span class="completed-msg">
-                  <i class="fa-solid fa-gem"></i> اكتملت الجلسة وتم إضافة نقاط الولاء لحسابكِ
+                  <i class="fa-solid fa-circle-check text-success"></i> اكتملت الجلسة بنجاح
                 </span>
-                <div class="footer-btns">
-                  <button
-                    *ngIf="!b.review"
-                    (click)="openReviewModal(b)"
-                    class="btn-primary btn-sm"
-                  >
-                    <i class="fa-solid fa-star"></i> تقييم الأخصائية
-                  </button>
-                  <button (click)="openReportModal(b)" class="btn-outline btn-sm">
-                    <i class="fa-solid fa-flag"></i> بلاغ للإدارة
-                  </button>
-                </div>
+                <button *ngIf="!b.review" (click)="openReviewModal(b)" class="btn-primary btn-sm">
+                  <i class="fa-solid fa-star"></i> تقييم الأخصائية
+                </button>
               </div>
             </div>
           </div>
@@ -187,39 +205,59 @@ import { Booking, BookingStatus } from '../../../core/models';
               <strong>الأخصائية: {{ activeBooking.provider.display_name }}</strong>
               <div class="spec-rating">★ {{ activeBooking.provider.rating_avg }} ({{ activeBooking.provider.rating_count }} تقييم موثق)</div>
               <p class="spec-bio">{{ activeBooking.provider.bio }}</p>
-            </div>
+          <!-- Payment Method Choice (Manual vs Card) -->
+          <div class="modal-pay-tabs">
+            <button
+              class="pay-tab-btn"
+              [class.active]="payMethodTab === 'manual'"
+              (click)="payMethodTab = 'manual'"
+            >
+              <i class="fa-solid fa-bolt"></i> تحويل يدوي مجاني (InstaPay / فودافون كاش)
+            </button>
+            <button
+              class="pay-tab-btn"
+              [class.active]="payMethodTab === 'card'"
+              (click)="payMethodTab = 'card'"
+            >
+              <i class="fa-solid fa-credit-card"></i> بطاقة بنكية أونلاين
+            </button>
           </div>
 
-          <!-- Payment Details -->
-          <div class="pay-breakdown">
-            <div class="p-line">
-              <span>قيمة الجلسة المعتمدة:</span>
-              <strong>{{ activeBooking.agreed_price }} ج.م</strong>
-            </div>
-            <div class="p-line">
-              <span>مصاريف الانتقال والتعقيم:</span>
-              <strong class="text-success">مجاناً (شاملة)</strong>
-            </div>
-            <div class="p-line total">
-              <span>الإجمالي للدفع:</span>
-              <strong class="total-val">{{ activeBooking.agreed_price }} ج.م</strong>
-            </div>
+          <!-- Manual Payment Proof Upload -->
+          <div *ngIf="payMethodTab === 'manual'">
+            <app-upload-payment-proof
+              [referenceType]="'booking'"
+              [referenceId]="activeBooking.id"
+              [requiredAmount]="activeBooking.agreed_price || 1150"
+              (proofSubmitted)="onBookingProofSubmitted($event)"
+            ></app-upload-payment-proof>
           </div>
 
-          <div class="payment-method-selector">
-            <label class="pay-chip selected">
-              <i class="fa-solid fa-credit-card"></i>
-              <span>بطاقة بنكية / Paymob Gateway (آمن 100%)</span>
-            </label>
-          </div>
-        </div>
+          <!-- Online Card Gateway Option -->
+          <div *ngIf="payMethodTab === 'card'">
+            <div class="pay-breakdown">
+              <div class="p-line">
+                <span>قيمة الجلسة المعتمدة:</span>
+                <strong>{{ activeBooking.agreed_price }} ج.م</strong>
+              </div>
+              <div class="p-line">
+                <span>مصاريف الانتقال والتعقيم:</span>
+                <strong class="text-success">مجاناً (شاملة)</strong>
+              </div>
+              <div class="p-line total">
+                <span>الإجمالي للدفع:</span>
+                <strong class="total-val">{{ activeBooking.agreed_price }} ج.م</strong>
+              </div>
+            </div>
 
-        <div class="modal-footer">
-          <button (click)="isOfferModalOpen = false" class="btn-outline">تراجع</button>
-          <button (click)="confirmAndPay()" [disabled]="isPaying" class="btn-primary">
-            <span *ngIf="!isPaying"><i class="fa-solid fa-lock"></i> تأكيد ودفع {{ activeBooking.agreed_price }} ج.م</span>
-            <span *ngIf="isPaying"><i class="fa-solid fa-spinner fa-spin"></i> جاري معالجة الدفع...</span>
-          </button>
+            <div class="modal-footer px-0 mt-3">
+              <button (click)="isOfferModalOpen = false" class="btn-outline">تراجع</button>
+              <button (click)="confirmAndPay()" [disabled]="isPaying" class="btn-primary">
+                <span *ngIf="!isPaying"><i class="fa-solid fa-lock"></i> دفع إلكتروني فوراً {{ activeBooking.agreed_price }} ج.م</span>
+                <span *ngIf="isPaying"><i class="fa-solid fa-spinner fa-spin"></i> جاري معالجة الدفع...</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -539,6 +577,38 @@ import { Booking, BookingStatus } from '../../../core/models';
       border: 1.5px solid var(--color-primary); background: var(--color-primary-subtle);
       border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: var(--color-primary);
     }
+    .pending-proof-alert {
+      display: flex; gap: 0.75rem; align-items: center; background: #FFFBEB; border: 1px solid #FDE68A;
+      padding: 0.75rem 1rem; border-radius: 12px; color: #92400E; margin-top: 1rem;
+      i { font-size: 1.25rem; color: #D97706; }
+      strong { font-size: 0.85rem; display: block; }
+      p { font-size: 0.78rem; margin: 0; }
+    }
+    .rejected-proof-alert {
+      display: flex; gap: 0.75rem; align-items: center; background: #FEF2F2; border: 1px solid #FECACA;
+      padding: 0.75rem 1rem; border-radius: 12px; color: #991B1B; margin-top: 1rem;
+      i { font-size: 1.25rem; color: #EF4444; }
+      strong { font-size: 0.85rem; display: block; }
+      p { font-size: 0.78rem; margin: 0; }
+    }
+    .modal-pay-tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 1.25rem; background: #FAF7F5; padding: 4px; border-radius: 12px;
+    }
+    .pay-tab-btn {
+      flex: 1; padding: 0.6rem 0.75rem; border: none; background: transparent; border-radius: 8px;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700; color: var(--color-text-muted); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; transition: var(--transition-smooth);
+      &.active { background: #FFFFFF; color: var(--color-primary); box-shadow: var(--shadow-sm); }
+    }
+    .pay-status.pending-review {
+      background: #FEF3C7; color: #92400E; font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 9999px; font-weight: 700;
+    }
+    .offer-alert.pending {
+      color: #D97706; font-weight: 700; font-size: 0.85rem;
+    }
+    .flex-1 { flex: 1; }
+    .btn-micro { padding: 0.25rem 0.65rem; font-size: 0.75rem; }
+
     .modal-footer {
       display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;
       padding-top: 1rem; border-top: 1px solid var(--color-border-light);
@@ -562,12 +632,14 @@ import { Booking, BookingStatus } from '../../../core/models';
 })
 export class MyBookingsComponent {
   bookingsService = inject(BookingsService);
+  paymentProofsService = inject(PaymentProofsService);
   auth = inject(AuthService);
 
   isOfferModalOpen: boolean = false;
   isReviewModalOpen: boolean = false;
   isReportModalOpen: boolean = false;
   activeBooking: Booking | null = null;
+  payMethodTab: 'manual' | 'card' = 'manual';
 
   isPaying: boolean = false;
   selectedRating: number = 5;
@@ -587,9 +659,18 @@ export class MyBookingsComponent {
     return map[status] || status;
   }
 
+  getBookingProof(bookingId: string): PaymentProof | undefined {
+    return this.paymentProofsService.getProofForReference('booking', bookingId);
+  }
+
   openOfferModal(booking: Booking): void {
     this.activeBooking = booking;
+    this.payMethodTab = 'manual';
     this.isOfferModalOpen = true;
+  }
+
+  onBookingProofSubmitted(proof: PaymentProof): void {
+    this.isOfferModalOpen = false;
   }
 
   async confirmAndPay(): Promise<void> {
@@ -626,3 +707,4 @@ export class MyBookingsComponent {
     this.isReportModalOpen = false;
   }
 }
+

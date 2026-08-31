@@ -5,12 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { CartService } from '../../../core/services/cart.service';
 import { OrdersService } from '../../../core/services/orders.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { PaymentMethod } from '../../../core/models';
+import { PaymentMethod, PaymentProof } from '../../../core/models';
+import { UploadPaymentProofComponent } from '../../payment/upload-payment-proof/upload-payment-proof.component';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, UploadPaymentProofComponent],
   template: `
     <div class="checkout-page">
       <div class="container-custom">
@@ -24,14 +25,19 @@ import { PaymentMethod } from '../../../core/models';
         </div>
 
         <!-- Success Screen View -->
-        <div class="success-screen beauty-card animate-fade-in" *ngIf="orderSuccessId">
-          <div class="success-icon">
-            <i class="fa-solid fa-check"></i>
+        <div class="success-screen beauty-card animate-fade-in" *ngIf="orderSuccessId && !showManualPaymentProof">
+          <div class="success-icon" [class.pending-manual]="selectedPayment === 'manual_transfer'">
+            <i class="fa-solid" [ngClass]="selectedPayment === 'manual_transfer' ? 'fa-clock' : 'fa-check'"></i>
           </div>
-          <h2>تم استلام طلبك بنجاح!</h2>
+          <h2>{{ selectedPayment === 'manual_transfer' ? 'تم استلام طلبك وبانتظار مراجعة التحويل!' : 'تم استلام طلبك بنجاح!' }}</h2>
           <p class="order-num-text">رقم الطلب الخاص بك: <strong>#{{ orderSuccessId }}</strong></p>
           <p class="success-sub">
-            سيتواصل معك مندوب الشحن لتأكيد الموعد والتسليم خلال 24 إلى 48 ساعة.
+            <ng-container *ngIf="selectedPayment === 'manual_transfer'">
+              تم استلام صورة إثبات التحويل بنجاح. سيتم تأكيد الطلب والشحن بمجرد مراجعة الإدارة خلال 30 دقيقة.
+            </ng-container>
+            <ng-container *ngIf="selectedPayment !== 'manual_transfer'">
+              سيتواصل معك مندوب الشحن لتأكيد الموعد والتسليم خلال 24 إلى 48 ساعة.
+            </ng-container>
           </p>
 
           <div class="earned-points-banner">
@@ -47,6 +53,16 @@ import { PaymentMethod } from '../../../core/models';
               <i class="fa-solid fa-bag-shopping"></i> متابعة التسوق
             </a>
           </div>
+        </div>
+
+        <!-- Manual Payment Proof Step (If order created with manual transfer) -->
+        <div class="manual-proof-view" *ngIf="orderSuccessId && showManualPaymentProof">
+          <app-upload-payment-proof
+            [referenceType]="'order'"
+            [referenceId]="orderSuccessId"
+            [requiredAmount]="placedOrderTotal"
+            (proofSubmitted)="onProofSubmitted($event)"
+          ></app-upload-payment-proof>
         </div>
 
         <!-- Empty Cart Notice -->
@@ -136,6 +152,23 @@ import { PaymentMethod } from '../../../core/models';
               <div class="payment-options">
                 <label
                   class="payment-card"
+                  [class.selected]="selectedPayment === 'manual_transfer'"
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="manual_transfer"
+                    [(ngModel)]="selectedPayment"
+                  />
+                  <div class="payment-icon text-indigo"><i class="fa-solid fa-bolt"></i></div>
+                  <div class="payment-text">
+                    <strong>تحويل مباشر مجاني (InstaPay / فودافون كاش / بنكي) <span class="badge-rec">موصى به</span></strong>
+                    <p>تحويل فوري بدون رسوم إضافية مع رفع صورة الإيصال لاعتماد الطلب</p>
+                  </div>
+                </label>
+
+                <label
+                  class="payment-card"
                   [class.selected]="selectedPayment === 'cash_on_delivery'"
                 >
                   <input
@@ -165,23 +198,6 @@ import { PaymentMethod } from '../../../core/models';
                   <div class="payment-text">
                     <strong>بطاقة بنكية / فيزا أو ماستركارد (Paymob Gateway)</strong>
                     <p>دفع إلكتروني آمن ومشفر 100%</p>
-                  </div>
-                </label>
-
-                <label
-                  class="payment-card"
-                  [class.selected]="selectedPayment === 'wallet'"
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="wallet"
-                    [(ngModel)]="selectedPayment"
-                  />
-                  <div class="payment-icon"><i class="fa-solid fa-mobile-screen"></i></div>
-                  <div class="payment-text">
-                    <strong>محفظة إلكترونية (فودافون كاش، اتصالات كاش، إنستاباي)</strong>
-                    <p>تحويل مباشر وسريع عبر المحفظة</p>
                   </div>
                 </label>
               </div>
@@ -514,10 +530,31 @@ import { PaymentMethod } from '../../../core/models';
         font-size: 2.2rem;
         margin-bottom: 1.5rem;
         box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+
+        &.pending-manual {
+          background: #F59E0B;
+          box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
+        }
       }
       h2 { font-size: 1.85rem; font-weight: 800; margin-bottom: 0.5rem; }
       .order-num-text { font-size: 1.1rem; color: var(--color-primary); margin-bottom: 0.75rem; }
       .success-sub { color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+    }
+    .badge-rec {
+      background: #EEF2FF;
+      color: #4F46E5;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      margin-right: 0.35rem;
+    }
+    .text-indigo {
+      color: #6366F1;
+      background: #EEF2FF !important;
+    }
+    .manual-proof-view {
+      margin: 2rem auto;
     }
     .earned-points-banner {
       display: inline-flex;
@@ -562,10 +599,11 @@ export class CheckoutComponent {
   shippingCity: string = this.auth.profile()?.city || 'القاهرة';
   shippingAddress: string = this.auth.profile()?.address_line || '';
   orderNotes: string = '';
-  selectedPayment: PaymentMethod = 'cash_on_delivery';
+  selectedPayment: PaymentMethod = 'manual_transfer';
 
   isSubmitting: boolean = false;
   orderSuccessId: string | null = null;
+  showManualPaymentProof: boolean = false;
   placedOrderTotal: number = 0;
   Math = Math;
 
@@ -611,6 +649,16 @@ export class CheckoutComponent {
     if (result.success && result.orderId) {
       this.orderSuccessId = result.orderId;
       this.cart.clearCart();
+
+      // If manual transfer, show the payment proof upload screen first
+      if (this.selectedPayment === 'manual_transfer') {
+        this.showManualPaymentProof = true;
+      }
     }
   }
+
+  onProofSubmitted(proof: PaymentProof): void {
+    this.showManualPaymentProof = false;
+  }
 }
+

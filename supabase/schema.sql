@@ -63,7 +63,6 @@ create policy "admin manages banners" on banners
     exists (select 1 from profiles where id = auth.uid() and role = 'admin')
   );
 
--- View: currently active banners for public display
 create or replace view active_banners as
 select *
 from banners
@@ -71,6 +70,82 @@ where is_active = true
   and (start_at is null or start_at <= now())
   and (end_at is null or end_at >= now())
 order by sort_order asc;
+
+-- =============================================================================
+-- 6. PHASE 5 TABLES (MANUAL PAYMENT PROOF SYSTEM)
+-- =============================================================================
+
+create type payment_reference_type as enum ('order', 'booking');
+create type payment_proof_status as enum ('pending_review', 'approved', 'rejected');
+create type payment_channel as enum ('bank_transfer', 'instapay', 'vodafone_cash', 'other');
+
+create table if not exists payment_proofs (
+  id uuid primary key default gen_random_uuid(),
+  reference_type payment_reference_type not null,
+  reference_id uuid not null,
+  user_id uuid not null references profiles(id),
+  channel payment_channel not null,
+  sender_name text,
+  amount_claimed numeric(10,2) not null,
+  receipt_storage_path text not null,
+  status payment_proof_status not null default 'pending_review',
+  admin_note text,
+  reviewed_by uuid references profiles(id),
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_payment_proofs_pending
+  on payment_proofs (status, created_at)
+  where status = 'pending_review';
+
+create or replace function apply_payment_approval()
+returns trigger language plpgsql as $$
+begin
+  if new.status = 'approved' and (old.status is distinct from 'approved') then
+    new.reviewed_at := now();
+
+    if new.reference_type = 'order' then
+      update orders set payment_status = 'paid', status = 'confirmed'
+      where id = new.reference_id;
+
+    elsif new.reference_type = 'booking' then
+      update bookings set payment_status = 'paid', status = 'confirmed'
+      where id = new.reference_id;
+    end if;
+  end if;
+
+  if new.status = 'rejected' and (old.status is distinct from 'rejected') then
+    new.reviewed_at := now();
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_apply_payment_approval on payment_proofs;
+create trigger trg_apply_payment_approval
+before update on payment_proofs
+for each row execute function apply_payment_approval();
+
+alter table payment_proofs enable row level security;
+
+drop policy if exists "own payment proofs" on payment_proofs;
+create policy "own payment proofs" on payment_proofs
+  for select using (
+    auth.uid() = user_id
+    or exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
+
+drop policy if exists "customer submits proof" on payment_proofs;
+create policy "customer submits proof" on payment_proofs
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "admin reviews proof" on payment_proofs;
+create policy "admin reviews proof" on payment_proofs
+  for update using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
 
 -- =============================================================================
 -- 2. CORE TABLES (PHASE 1 - STORE)

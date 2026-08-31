@@ -9,8 +9,9 @@ import { ProvidersService } from '../../core/services/providers.service';
 import { CentersService } from '../../core/services/centers.service';
 import { ReferralsService } from '../../core/services/referrals.service';
 import { BannersService } from '../../core/services/banners.service';
+import { PaymentProofsService } from '../../core/services/payment-proofs.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus, RedemptionStatus, ReferralRedemption, Banner } from '../../core/models';
+import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus, RedemptionStatus, ReferralRedemption, Banner, PaymentProof } from '../../core/models';
 import { MOCK_COUPONS } from '../../core/mock/mock-data';
 
 @Component({
@@ -75,8 +76,25 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           </div>
         </div>
 
+        <!-- New Manual Payments Audit Alert -->
+        <div class="audit-alert-box mb-4" *ngIf="paymentProofsService.pendingProofs().length > 0" (click)="activeTab = 'payments'" style="cursor: pointer;">
+          <i class="fa-solid fa-receipt"></i>
+          <div>
+            <strong>تنبيه مدفوعات جديدة بحاجة للمراجعة ({{ paymentProofsService.pendingProofs().length }} إيصال):</strong>
+            <p>يوجد إيصالات تحويل مباشر (InstaPay / فودافون كاش / بنكي) جديدة بحاجة لمراجعتك لاعتماد الطلبات والجلسات.</p>
+          </div>
+          <button class="btn-primary btn-micro mr-auto">مراجعة التحويلات الآن</button>
+        </div>
+
         <!-- Dashboard Navigation Tabs -->
         <div class="dashboard-tabs">
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'payments'"
+            (click)="activeTab = 'payments'"
+          >
+            <i class="fa-solid fa-receipt"></i> مراجعة إثباتات الدفع ({{ paymentProofsService.pendingProofs().length }})
+          </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'banners'"
@@ -126,6 +144,83 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           >
             <i class="fa-solid fa-ticket"></i> الكوبونات
           </button>
+        </div>
+
+        <!-- Tab: Manual Payment Proofs Review (Phase 5) -->
+        <div class="tab-panel beauty-card animate-fade-in" *ngIf="activeTab === 'payments'">
+          <div class="panel-header">
+            <div>
+              <span class="badge-emerald">نظام التحقق من التحويلات اليدوية (Phase 5)</span>
+              <h3 class="mt-1">طابور مراجعة واعتماد إيصالات الدفع (InstaPay / فودافون كاش / بنكي)</h3>
+            </div>
+            <div class="payment-filters">
+              <span class="badge-pill active">{{ paymentProofsService.pendingProofs().length }} إيصال قيد المراجعة</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>المعاملة</th>
+                  <th>العميلة</th>
+                  <th>قناة التحويل</th>
+                  <th>اسم صاحب الحساب</th>
+                  <th>المبلغ</th>
+                  <th>صورة الإيصال</th>
+                  <th>الحالة</th>
+                  <th>الإجراء</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let prf of paymentProofsService.proofs()">
+                  <td>
+                    <strong *ngIf="prf.reference_type === 'order'">طلب متجر #{{ prf.reference_id }}</strong>
+                    <strong *ngIf="prf.reference_type === 'booking'">جلسة منزلية #{{ prf.reference_id }}</strong>
+                    <small class="d-block text-muted">{{ prf.created_at | date:'medium' }}</small>
+                  </td>
+                  <td>
+                    <strong>{{ prf.user?.full_name || 'سارة أحمد' }}</strong>
+                    <small class="d-block text-muted">{{ prf.user?.phone || '01123456789' }}</small>
+                  </td>
+                  <td>
+                    <span class="channel-chip" [ngClass]="prf.channel">
+                      <i class="fa-solid" [ngClass]="prf.channel === 'instapay' ? 'fa-bolt' : (prf.channel === 'vodafone_cash' ? 'fa-mobile-screen-button' : 'fa-building-columns')"></i>
+                      {{ getChannelLabel(prf.channel) }}
+                    </span>
+                  </td>
+                  <td><strong>{{ prf.sender_name || '—' }}</strong></td>
+                  <td><strong class="text-primary">{{ prf.amount_claimed }} ج.م</strong></td>
+                  <td>
+                    <div class="receipt-thumb-wrap" (click)="openPreviewReceipt(prf.receipt_storage_path)" title="اضغطي للتكبير">
+                      <img [src]="prf.receipt_storage_path" alt="إيصال التحويل" class="banner-thumb" />
+                      <span class="thumb-zoom-icon"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-pill" [ngClass]="'status-' + prf.status">
+                      {{ getProofStatusArabic(prf.status) }}
+                    </span>
+                    <small class="d-block text-danger mt-1" *ngIf="prf.status === 'rejected' && prf.admin_note">
+                      السبب: {{ prf.admin_note }}
+                    </small>
+                  </td>
+                  <td>
+                    <div class="row-actions" *ngIf="prf.status === 'pending_review'">
+                      <button (click)="approvePayment(prf.id)" class="btn-primary btn-micro" title="اعتماد وتأكيد الدفع">
+                        <i class="fa-solid fa-check"></i> اعتماد
+                      </button>
+                      <button (click)="openRejectModal(prf)" class="btn-outline btn-micro text-danger" title="رفض الإيصال">
+                        <i class="fa-solid fa-xmark"></i> رفض
+                      </button>
+                    </div>
+                    <span *ngIf="prf.status === 'approved'" class="text-success text-xs"><i class="fa-solid fa-circle-check"></i> تم الاعتماد</span>
+                    <span *ngIf="prf.status === 'rejected'" class="text-muted text-xs"><i class="fa-solid fa-circle-xmark text-danger"></i> تم الرفض</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Tab: Promotional Banners Management (Phase 4) -->
@@ -671,6 +766,48 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           </button>
         </div>
       </div>
+
+      <!-- Modal: Preview Receipt Screenshot (Phase 5) -->
+      <div class="modal-backdrop" *ngIf="previewReceiptUrl" (click)="closePreviewReceipt()"></div>
+      <div class="modal-content receipt-zoom-modal beauty-card animate-fade-in" *ngIf="previewReceiptUrl">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-receipt"></i> معاينة إيصال التحويل البنكي</h3>
+          <button (click)="closePreviewReceipt()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body text-center">
+          <img [src]="previewReceiptUrl" alt="إيصال التحويل بالكامل" class="full-receipt-img" />
+        </div>
+        <div class="modal-footer">
+          <button (click)="closePreviewReceipt()" class="btn-primary">إغلاق المعاينة</button>
+        </div>
+      </div>
+
+      <!-- Modal: Reject Payment Proof with reason (Phase 5) -->
+      <div class="modal-backdrop" *ngIf="rejectingProof" (click)="closeRejectModal()"></div>
+      <div class="modal-content beauty-card animate-fade-in" *ngIf="rejectingProof">
+        <div class="modal-header">
+          <h3 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> رفض إثبات التحويل</h3>
+          <button (click)="closeRejectModal()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-3">يرجى توضيح سبب رفض الإيصال لإرسال إشعار فوري للعميلة لإعادة رفع إيصال صحيح:</p>
+          <div class="form-group">
+            <label>سبب الرفض <span class="req">*</span></label>
+            <textarea
+              [(ngModel)]="rejectReason"
+              rows="3"
+              placeholder="مثال: المبلغ المحول غير مطابق، أو صورة الإيصال غير واضحة، أو اسم المحوّل مختلف..."
+              class="input-custom"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button (click)="closeRejectModal()" class="btn-outline">إلغاء</button>
+          <button (click)="confirmReject()" [disabled]="!rejectReason.trim()" class="btn-danger">
+            تأكيد الرفض وإشعار العميلة
+          </button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -903,6 +1040,52 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
     .c-terms { font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 1rem; }
     .c-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--color-text-subtle); border-top: 1px solid var(--color-border-light); padding-top: 0.75rem; }
 
+    .receipt-thumb-wrap {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      border-radius: 10px;
+      overflow: hidden;
+      &:hover .thumb-zoom-icon { opacity: 1; }
+    }
+    .thumb-zoom-icon {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .receipt-zoom-modal { max-width: 650px; }
+    .full-receipt-img {
+      max-height: 65vh;
+      max-width: 100%;
+      border-radius: 12px;
+      object-fit: contain;
+      box-shadow: var(--shadow-md);
+    }
+    .channel-chip {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      &.instapay { background: #EEF2FF; color: #4F46E5; }
+      &.vodafone_cash { background: #FEF2F2; color: #DC2626; }
+      &.bank_transfer { background: #ECFDF5; color: #059669; }
+      &.other { background: #F3F4F6; color: #4B5563; }
+    }
+    .status-pending_review { background: #FEF3C7; color: #92400E; }
+    .status-approved { background: #DCFCE7; color: #15803D; }
+    .status-rejected { background: #FEE2E2; color: #B91C1C; }
+    .mr-auto { margin-right: auto; }
+
     /* Modals */
     .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(30, 27, 24, 0.55); backdrop-filter: blur(4px); z-index: 2000; }
     .modal-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; background: #FFFFFF; border-radius: 20px; padding: 2rem; z-index: 2001; }
@@ -922,14 +1105,20 @@ export class AdminComponent {
   centersService = inject(CentersService);
   referralsService = inject(ReferralsService);
   bannersService = inject(BannersService);
+  paymentProofsService = inject(PaymentProofsService);
   auth = inject(AuthService);
 
-  activeTab: 'banners' | 'centers_referrals' | 'matching' | 'providers' | 'products' | 'orders' | 'coupons' = 'banners';
+  activeTab: 'payments' | 'banners' | 'centers_referrals' | 'matching' | 'providers' | 'products' | 'orders' | 'coupons' = 'payments';
   productSearch: string = '';
   couponsList: Coupon[] = MOCK_COUPONS;
 
   selectedProviderId: Record<string, string> = {};
   offerPrices: Record<string, number> = {};
+
+  // Payment Proofs Review State (Phase 5)
+  previewReceiptUrl: string | null = null;
+  rejectingProof: PaymentProof | null = null;
+  rejectReason: string = '';
 
   // Product Modal State
   isModalOpen: boolean = false;
@@ -1118,5 +1307,53 @@ export class AdminComponent {
     if (confirm('هل أنتِ متأكدة من حذف هذا البانر الترويجي؟')) {
       await this.bannersService.deleteBanner(id);
     }
+  }
+
+  // Phase 5: Payment Proofs Methods
+  openPreviewReceipt(url: string): void {
+    this.previewReceiptUrl = url;
+  }
+
+  closePreviewReceipt(): void {
+    this.previewReceiptUrl = null;
+  }
+
+  openRejectModal(proof: PaymentProof): void {
+    this.rejectingProof = proof;
+    this.rejectReason = '';
+  }
+
+  closeRejectModal(): void {
+    this.rejectingProof = null;
+    this.rejectReason = '';
+  }
+
+  async confirmReject(): Promise<void> {
+    if (!this.rejectingProof || !this.rejectReason.trim()) return;
+    await this.paymentProofsService.rejectProof(this.rejectingProof.id, this.rejectReason);
+    this.closeRejectModal();
+  }
+
+  async approvePayment(proofId: string): Promise<void> {
+    await this.paymentProofsService.approveProof(proofId);
+  }
+
+  getProofStatusArabic(status: string): string {
+    const map: Record<string, string> = {
+      pending_review: 'بانتظار المراجعة والتدقيق',
+      approved: 'تم الاعتماد والتأكيد ✓',
+      rejected: 'تم الرفض ✗'
+    };
+    return map[status] || status;
+  }
+
+  getChannelLabel(channel: string): string {
+    const map: Record<string, string> = {
+      instapay: 'انستاباي (InstaPay)',
+      vodafone_cash: 'فودافون كاش',
+      bank_transfer: 'تحويل بنكي (CIB)',
+      other: 'أخرى'
+    };
+    return map[channel] || channel;
   }
 }

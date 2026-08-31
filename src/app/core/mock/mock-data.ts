@@ -1,4 +1,4 @@
-import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification, CenterService, ReferralCode, ReferralRedemption, Banner } from '../models';
+import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification, CenterService, ReferralCode, ReferralRedemption, Banner, PaymentProof, PaymentChannel } from '../models';
 
 export const MOCK_CATEGORIES: Category[] = [
   {
@@ -347,10 +347,6 @@ export const MOCK_REFERRAL_REDEMPTIONS: ReferralRedemption[] = [
   }
 ];
 
-// =============================================================================
-// PHASE 4: PROMOTIONAL BANNERS MOCK DATA
-// =============================================================================
-
 export const MOCK_BANNERS: Banner[] = [
   {
     id: 'ban-1',
@@ -379,20 +375,86 @@ export const MOCK_BANNERS: Banner[] = [
     is_active: true,
     sort_order: 2,
     created_at: '2026-08-30T11:00:00Z'
+  }
+];
+
+// =============================================================================
+// PHASE 5: MANUAL PAYMENT CHANNELS & PROOFS
+// =============================================================================
+
+export interface PaymentChannelConfig {
+  id: string;
+  type: PaymentChannel;
+  title: string;
+  accountHandle?: string;
+  accountNumber: string;
+  iban?: string;
+  bankName?: string;
+  holderName: string;
+  icon: string;
+  accentColor: string;
+}
+
+export const OFFICIAL_PAYMENT_CHANNELS: PaymentChannelConfig[] = [
+  {
+    id: 'instapay',
+    type: 'instapay',
+    title: 'انستاباي (InstaPay) — تحويل لحظي فوري',
+    accountHandle: 'beauty_care@instapay',
+    accountNumber: '01123456789',
+    holderName: 'مؤسسة بيوتي كير للتجارة والعناية',
+    icon: 'fa-bolt',
+    accentColor: '#6366F1'
   },
   {
-    id: 'ban-3',
-    type: 'coupon',
-    placement: 'homepage',
-    title: 'خصم 50 ج.م فوري على أول طلب للمتجر',
-    subtitle: 'استخدمي الكود الترويجي GLOW50 على جميع سلات التسوق التي تتجاوز 500 ج.م مع شحن مجاني لكافة المحافظات',
-    image_storage_path: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=1600&q=80',
-    cta_text: 'استفيدي من الخصم',
-    cta_link: '/products',
-    coupon_id: 'coup-2',
-    coupon: MOCK_COUPONS[1],
-    is_active: true,
-    sort_order: 3,
-    created_at: '2026-08-30T12:00:00Z'
+    id: 'vodafone_cash',
+    type: 'vodafone_cash',
+    title: 'محفظة فودافون كاش (Vodafone Cash)',
+    accountNumber: '01099887766',
+    holderName: 'بيوتي كير — محفظة إلكترونية',
+    icon: 'fa-mobile-screen-button',
+    accentColor: '#EF4444'
+  },
+  {
+    id: 'bank_transfer',
+    type: 'bank_transfer',
+    title: 'تحويل بنكي — البنك التجاري الدولي (CIB)',
+    accountNumber: '100054321987',
+    iban: 'EG4500100000000100054321987',
+    bankName: 'البنك التجاري الدولي (CIB) — فرع التسعين، القاهرة',
+    holderName: 'شركة بيوتي لحلول العناية والتجميل',
+    icon: 'fa-building-columns',
+    accentColor: '#059669'
+  }
+];
+
+export const MOCK_PAYMENT_PROOFS: PaymentProof[] = [
+  {
+    id: 'prf-101',
+    reference_type: 'order',
+    reference_id: 'ord-1001',
+    user_id: 'usr-cust-01',
+    user: MOCK_CUSTOMER_PROFILE,
+    channel: 'instapay',
+    sender_name: 'سارة أحمد محمد',
+    amount_claimed: 896,
+    receipt_storage_path: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
+    status: 'approved',
+    reviewed_by: 'usr-admin-01',
+    reviewed_at: '2026-08-28T15:30:00Z',
+    created_at: '2026-08-28T14:45:00Z'
+  },
+  {
+    id: 'prf-102',
+    reference_type: 'booking',
+    reference_id: 'bok-901',
+    user_id: 'usr-cust-01',
+    user: MOCK_CUSTOMER_PROFILE,
+    channel: 'vodafone_cash',
+    sender_name: 'سارة أحمد',
+    amount_claimed: 1150,
+    receipt_storage_path: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
+    status: 'pending_review',
+    created_at: '2026-08-31T19:20:00Z'
   }
 ];

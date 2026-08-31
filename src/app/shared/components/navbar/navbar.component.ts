@@ -13,48 +13,6 @@ import { NotificationsService } from '../../../core/services/notifications.servi
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <!-- Top Announcement & Real Auth Status Bar (Desktop / Tablet) -->
-    <div class="top-banner">
-      <div class="container-custom banner-content">
-        <div class="banner-item">
-          <i class="fa-solid fa-sparkles"></i>
-          <span>منصة بيوتي: متجر منتجات أصلية + جلسات منزلية + دليل وتخفيضات المراكز الشريكة</span>
-        </div>
-
-        <div class="banner-actions">
-          <!-- When Logged In -->
-          <ng-container *ngIf="auth.isAuthenticated()">
-            <span class="loyalty-badge" *ngIf="auth.loyaltyPoints() > 0">
-              <i class="fa-solid fa-gem"></i>
-              رصيدك: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة
-            </span>
-
-            <span class="user-greeting-top hide-on-mobile">
-              <i class="fa-regular fa-circle-user"></i>
-              أهلاً، <strong>{{ auth.profile()?.full_name?.split(' ')?.[0] }}</strong> ({{ getRoleLabel(auth.userRole()) }})
-            </span>
-
-            <button (click)="auth.signOut()" class="top-auth-btn hide-on-mobile" title="تسجيل الخروج">
-              <i class="fa-solid fa-arrow-right-from-bracket"></i> خروج
-            </button>
-          </ng-container>
-
-          <!-- When Guest (Not logged in) -->
-          <ng-container *ngIf="!auth.isAuthenticated()">
-            <a routerLink="/login" class="top-auth-link">
-              <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول
-            </a>
-            <a routerLink="/signup" class="top-auth-link highlight hide-on-mobile">
-              <i class="fa-solid fa-user-plus"></i> حساب عميلة جديد
-            </a>
-            <a routerLink="/apply/provider" class="top-auth-link partner hide-on-mobile">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> انضمي كشريك
-            </a>
-          </ng-container>
-        </div>
-      </div>
-    </div>
-
     <!-- Main Navigation Header -->
     <header class="main-header glass-nav sticky-top">
       <div class="container-custom header-inner">
@@ -130,6 +88,9 @@ import { NotificationsService } from '../../../core/services/notifications.servi
               <i class="fa-regular fa-user"></i>
               <span class="action-label">{{ auth.profile()?.full_name?.split(' ')?.[0] || 'حسابي' }}</span>
             </a>
+            <button (click)="auth.signOut()" class="action-btn logout-header-btn hide-on-mobile" title="تسجيل الخروج">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
           </ng-container>
 
           <!-- Cart Button (Always visible) -->
@@ -301,94 +262,10 @@ import { NotificationsService } from '../../../core/services/notifications.servi
     </aside>
   `,
   styles: [`
-    /* Desktop Top Banner */
-    .top-banner {
-      background: linear-gradient(90deg, #1E1B18 0%, #2D5A4B 100%);
-      color: #F8F4F0;
-      font-size: 0.8rem;
-      padding: 0.45rem 0;
-    }
-    .banner-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .banner-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #FAF7F5;
-      i { color: #E08D79; }
-
-      @media (max-width: 768px) {
-        font-size: 0.75rem;
-        width: 100%;
-        justify-content: center;
-      }
-    }
-    .banner-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      @media (max-width: 768px) { display: none; }
-    }
-    .loyalty-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      background: rgba(212, 175, 55, 0.2);
-      border: 1px solid rgba(212, 175, 55, 0.4);
-      padding: 0.15rem 0.6rem;
-      border-radius: 9999px;
-      color: #FFD966;
-      font-size: 0.75rem;
-    }
-    .user-greeting-top {
-      color: #E2E8F0;
-      font-size: 0.78rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      strong { color: #FFFFFF; font-weight: 700; }
-    }
-    .top-auth-link {
-      color: #FAF7F5;
-      font-size: 0.78rem;
-      text-decoration: none;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 6px;
+    .logout-header-btn {
+      color: #9CA3AF;
       transition: var(--transition-smooth);
-      &:hover { background: rgba(255, 255, 255, 0.15); }
-      &.highlight {
-        background: var(--color-primary);
-        color: #fff;
-        font-weight: 700;
-      }
-      &.partner {
-        color: #FDE68A;
-      }
-    }
-    .top-auth-btn {
-      background: rgba(255, 255, 255, 0.15);
-      border: none;
-      color: #FCA5A5;
-      font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 0.2rem 0.6rem;
-      border-radius: 6px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: var(--transition-smooth);
-      &:hover { background: #EF4444; color: #FFFFFF; }
+      &:hover { color: #EF4444; }
     }
 
     /* Main Header */

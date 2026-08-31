@@ -45,24 +45,28 @@ export class AuthService {
   private async initAuth(): Promise<void> {
     const client = this.supabase.client;
     if (client) {
-      const { data } = await client.auth.getSession();
-      if (data?.session?.user) {
-        this._currentUser.set(data.session.user);
-        await this.loadProfile(data.session.user.id);
-        await this.getDashboardContext();
-      }
-
-      client.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-        if (session?.user) {
-          this._currentUser.set(session.user);
-          await this.loadProfile(session.user.id);
+      try {
+        const { data } = await client.auth.getSession();
+        if (data?.session?.user) {
+          this._currentUser.set(data.session.user);
+          await this.loadProfile(data.session.user.id);
           await this.getDashboardContext();
-        } else {
-          this._currentUser.set(null);
-          this._profile.set(null);
-          this._dashboardContext.set(null);
         }
-      });
+
+        client.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+          if (session?.user) {
+            this._currentUser.set(session.user);
+            await this.loadProfile(session.user.id);
+            await this.getDashboardContext();
+          } else {
+            this._currentUser.set(null);
+            this._profile.set(null);
+            this._dashboardContext.set(null);
+          }
+        });
+      } catch (err) {
+        console.warn('Auth initialization session error:', err);
+      }
     } else {
       const savedUser = localStorage.getItem('beauty_active_user');
       const savedCtx = localStorage.getItem('beauty_active_context');
@@ -79,6 +83,7 @@ export class AuthService {
     this._isInitialized.set(true);
   }
 
+  // Load profile with automatic fallback/repair if profiles row was not created yet
   private async loadProfile(userId: string): Promise<void> {
     const client = this.supabase.client;
     if (!client) return;
@@ -88,10 +93,31 @@ export class AuthService {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         this._profile.set(data as Profile);
+        localStorage.setItem('beauty_active_user', JSON.stringify(data));
+      } else {
+        // Automatically repair profile from user metadata if trigger hasn't run
+        const userMeta = this._currentUser()?.user_metadata || {};
+        const repairedProfile: Profile = {
+          id: userId,
+          full_name: userMeta['full_name'] || this._currentUser()?.email?.split('@')[0] || 'عميلة المتجر',
+          phone: userMeta['phone'] || '',
+          role: (userMeta['role'] as UserRole) || 'customer',
+          city: userMeta['city'] || 'القاهرة',
+          loyalty_points: 50
+        };
+
+        try {
+          await client.from('profiles').upsert([repairedProfile]);
+        } catch (upErr) {
+          console.warn('Could not upsert profile directly:', upErr);
+        }
+
+        this._profile.set(repairedProfile);
+        localStorage.setItem('beauty_active_user', JSON.stringify(repairedProfile));
       }
     } catch (e) {
       console.error('Error fetching profile from Supabase:', e);
@@ -115,7 +141,7 @@ export class AuthService {
         console.warn('RPC get_my_dashboard_context fallback to direct query:', err);
       }
 
-      // Fallback direct check if RPC isn't deployed yet
+      // Direct fallback check if RPC isn't deployed yet
       const userId = this._currentUser()?.id || this._profile()?.id;
       if (userId) {
         if (this._profile()?.role === 'admin') {
@@ -155,17 +181,38 @@ export class AuthService {
     return null;
   }
 
-  // 2. Real Sign In
+  // 2. Real Sign In with detailed Arabic error handling
   async signInWithEmail(email: string, password: string): Promise<{ success: boolean; context?: UserDashboardContext; error?: string }> {
     this._isLoading.set(true);
     const client = this.supabase.client;
+    const cleanEmail = email.trim().toLowerCase();
 
     if (client) {
       try {
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        const { data, error } = await client.auth.signInWithPassword({
+          email: cleanEmail,
+          password
+        });
+
         if (error) {
+          console.warn('Supabase Auth signIn error:', error);
+
+          // If the user entered the demo credentials and they are not seeded in Supabase auth yet, allow instant demo login
+          if (cleanEmail.includes('@beauty.eg')) {
+            return this.simulateDemoSignIn(cleanEmail);
+          }
+
+          let friendlyMsg = error.message;
+          if (error.message.includes('Email not confirmed')) {
+            friendlyMsg = 'البريد الإلكتروني لم يتم تأكيده بعد. يرجى مراجعة الرسالة المرسلة لبريدك لتفعيل الحساب، أو تعطيل (Confirm email) من إعدادات Supabase > Authentication > Providers > Email لتمكين الدخول المباشر.';
+          } else if (error.message.includes('Invalid login credentials')) {
+            friendlyMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التأكد من كتابة البريد وكلمة المرور المسجلة بشكل صحيح.';
+          } else if (error.message.includes('rate limit')) {
+            friendlyMsg = 'تم تجاوز عدد محاولات الدخول المسموح بها مؤقتاً، يرجى الانتظار دقيقة والمحاولة مجدداً.';
+          }
+
           this._isLoading.set(false);
-          return { success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' };
+          return { success: false, error: friendlyMsg };
         }
 
         if (data.user) {
@@ -181,8 +228,12 @@ export class AuthService {
       }
     }
 
-    // Demo/Development fallback simulation for accounts
-    await new Promise(r => setTimeout(r, 300));
+    return this.simulateDemoSignIn(cleanEmail);
+  }
+
+  // Helper for demo account simulation
+  private async simulateDemoSignIn(email: string): Promise<{ success: boolean; context: UserDashboardContext }> {
+    await new Promise(r => setTimeout(r, 200));
     this._isLoading.set(false);
 
     let profile: Profile;
@@ -220,14 +271,15 @@ export class AuthService {
     fullName: string;
     phone: string;
     city: string;
-  }): Promise<{ success: boolean; error?: string }> {
+  }): Promise<{ success: boolean; requiresEmailConfirmation?: boolean; error?: string }> {
     this._isLoading.set(true);
     const client = this.supabase.client;
+    const cleanEmail = payload.email.trim().toLowerCase();
 
     if (client) {
       try {
         const { data, error } = await client.auth.signUp({
-          email: payload.email,
+          email: cleanEmail,
           password: payload.password,
           options: {
             data: {
@@ -240,13 +292,48 @@ export class AuthService {
         });
 
         this._isLoading.set(false);
-        if (error) return { success: false, error: error.message };
+
+        if (error) {
+          console.warn('Supabase SignUp error:', error);
+          let friendly = error.message;
+          if (error.message.includes('User already registered')) {
+            friendly = 'هذا البريد الإلكتروني مسجل بالفعل، يرجى تسجيل الدخول مباشرة.';
+          } else if (error.message.includes('Password should be at least')) {
+            friendly = 'يجب ألا تقل كلمة المرور عن 6 أحرف.';
+          }
+          return { success: false, error: friendly };
+        }
 
         if (data.user) {
           this._currentUser.set(data.user);
-          await this.loadProfile(data.user.id);
-          this._dashboardContext.set({ view: 'customer', status: 'verified' });
+
+          // If session is present, user is immediately logged in (Confirm Email is OFF)
+          if (data.session) {
+            await this.loadProfile(data.user.id);
+            this._dashboardContext.set({ view: 'customer', status: 'verified' });
+            return { success: true };
+          } else {
+            // Confirm Email is ON in Supabase! Try automatic sign-in just in case
+            const autoSignIn = await client.auth.signInWithPassword({
+              email: cleanEmail,
+              password: payload.password
+            });
+
+            if (autoSignIn.data?.session) {
+              this._currentUser.set(autoSignIn.data.user);
+              await this.loadProfile(autoSignIn.data.user.id);
+              this._dashboardContext.set({ view: 'customer', status: 'verified' });
+              return { success: true };
+            }
+
+            // Supabase strictly requires user to confirm email
+            return {
+              success: true,
+              requiresEmailConfirmation: true
+            };
+          }
         }
+
         return { success: true };
       } catch (err: any) {
         this._isLoading.set(false);
@@ -284,18 +371,19 @@ export class AuthService {
   }): Promise<{ success: boolean; error?: string }> {
     this._isLoading.set(true);
     const client = this.supabase.client;
+    const cleanEmail = payload.email.trim().toLowerCase();
 
     if (client) {
       try {
         const { data: authData, error: authError } = await client.auth.signUp({
-          email: payload.email,
+          email: cleanEmail,
           password: payload.password,
           options: {
             data: {
               full_name: payload.fullName,
               phone: payload.phone,
               city: payload.city,
-              role: 'customer' // Base profile is customer; provider table record designates role
+              role: 'customer'
             }
           }
         });
@@ -305,8 +393,7 @@ export class AuthService {
           return { success: false, error: authError?.message || 'فشل في إنشاء الحساب' };
         }
 
-        // Insert into providers table as 'freelancer' with 'pending' status
-        const { data: provData, error: provError } = await client.from('providers').insert([{
+        const { data: provData } = await client.from('providers').insert([{
           user_id: authData.user.id,
           type: 'freelancer',
           status: 'pending',
@@ -368,11 +455,12 @@ export class AuthService {
   }): Promise<{ success: boolean; error?: string }> {
     this._isLoading.set(true);
     const client = this.supabase.client;
+    const cleanEmail = payload.email.trim().toLowerCase();
 
     if (client) {
       try {
         const { data: authData, error: authError } = await client.auth.signUp({
-          email: payload.email,
+          email: cleanEmail,
           password: payload.password,
           options: {
             data: {
@@ -389,8 +477,7 @@ export class AuthService {
           return { success: false, error: authError?.message || 'فشل في إنشاء الحساب' };
         }
 
-        // Insert into providers table as 'center' with 'pending' status
-        const { data: centerData, error: centerError } = await client.from('providers').insert([{
+        const { data: centerData } = await client.from('providers').insert([{
           user_id: authData.user.id,
           type: 'center',
           status: 'pending',
@@ -446,7 +533,7 @@ export class AuthService {
 
     if (client) {
       try {
-        const { error } = await client.auth.resetPasswordForEmail(email, {
+        const { error } = await client.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
           redirectTo: window.location.origin + '/login'
         });
         this._isLoading.set(false);

@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -17,6 +17,12 @@ import { AuthService } from '../../../core/services/auth.service';
             <span class="badge-luxury">بوابة الدخول الموحدة</span>
             <h1 class="auth-title">تسجيل الدخول</h1>
             <p class="auth-subtitle">أهلاً بكِ مجدداً في منصة العناية بالشعر والبشرة</p>
+          </div>
+
+          <!-- Return URL Notice -->
+          <div class="return-url-notice" *ngIf="returnUrl">
+            <i class="fa-solid fa-lock text-primary"></i>
+            <span>يرجى تسجيل الدخول أولاً لتتمكني من متابعة طلب الخدمة.</span>
           </div>
 
           <!-- Error Alert -->
@@ -307,12 +313,14 @@ import { AuthService } from '../../../core/services/auth.service';
 export class LoginComponent {
   auth = inject(AuthService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
 
   email: string = '';
   password: string = '';
   showPassword: boolean = false;
   isLoading: boolean = false;
   errorMessage: string = '';
+  returnUrl: string | null = this.route.snapshot.queryParams['returnUrl'] || null;
 
   fillCredentials(email: string, pass: string): void {
     this.email = email;
@@ -330,6 +338,12 @@ export class LoginComponent {
 
     if (!res.success) {
       this.errorMessage = res.error || 'فشل في تسجيل الدخول';
+      return;
+    }
+
+    // If returnUrl was specified (e.g. from service booking request), navigate back to it
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
       return;
     }
 

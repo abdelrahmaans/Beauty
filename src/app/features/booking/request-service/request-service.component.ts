@@ -31,6 +31,23 @@ import { HOME_CARE_SERVICES } from '../../../core/mock/mock-data';
           <div class="flow-layout">
             <!-- Left/Main Form -->
             <div class="flow-main">
+              <!-- Auth Notice if Guest -->
+              <div class="auth-notice-banner beauty-card animate-fade-in" *ngIf="!auth.isAuthenticated()">
+                <div class="notice-icon"><i class="fa-solid fa-user-lock"></i></div>
+                <div class="notice-text">
+                  <h4>تسجيل الدخول مطلوب لإرسال طلب الجلسة</h4>
+                  <p>لتتمكني من استقبال عروض الأسعار من الأخصائيات ومتابعة الحجز في حسابكِ، يرجى تسجيل الدخول أولاً.</p>
+                </div>
+                <div class="notice-btns">
+                  <a routerLink="/login" [queryParams]="{ returnUrl: '/booking/request' }" class="btn-primary btn-micro">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول
+                  </a>
+                  <a routerLink="/signup" class="btn-outline btn-micro">
+                    <i class="fa-solid fa-user-plus"></i> حساب جديد
+                  </a>
+                </div>
+              </div>
+
               <!-- Step 1: Select Service -->
               <div class="flow-card beauty-card">
                 <div class="card-step-header">
@@ -219,6 +236,32 @@ import { HOME_CARE_SERVICES } from '../../../core/mock/mock-data';
           </div>
         </div>
       </section>
+
+      <!-- Login Required Modal Dialog -->
+      <div class="modal-backdrop" *ngIf="showLoginModal" (click)="showLoginModal = false"></div>
+      <div class="modal-content beauty-card animate-fade-in" *ngIf="showLoginModal">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-lock text-primary"></i> تسجيل الدخول مطلوب</h3>
+          <button (click)="showLoginModal = false" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="lock-circle">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <h4>يرجى تسجيل الدخول أولاً</h4>
+          <p class="modal-desc">
+            لتتمكني من طلب جلسة العناية المنزلية وتلقي عروض الأسعار من الأخصائيات المعتمدات ومتابعة حالتها، يجب تسجيل الدخول في حسابكِ.
+          </p>
+          <div class="modal-actions-col">
+            <a routerLink="/login" [queryParams]="{ returnUrl: '/booking/request' }" class="btn-primary btn-block">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول الآن
+            </a>
+            <a routerLink="/signup" class="btn-outline btn-block mt-2">
+              <i class="fa-solid fa-user-plus"></i> إنشاء حساب عميلة جديد (مع 50 نقطة ولاء)
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -480,11 +523,110 @@ import { HOME_CARE_SERVICES } from '../../../core/mock/mock-data';
       text-align: center;
       line-height: 1.4;
     }
+    .auth-notice-banner {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+      border: 1.5px solid #FCD34D;
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+
+      .notice-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: #F59E0B;
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+      }
+      .notice-text {
+        flex: 1;
+        min-width: 250px;
+        h4 { font-size: 1.05rem; font-weight: 800; color: #92400E; margin-bottom: 0.25rem; }
+        p { font-size: 0.85rem; color: #B45309; margin: 0; }
+      }
+      .notice-btns {
+        display: flex;
+        gap: 0.6rem;
+      }
+    }
+
+    .btn-micro {
+      padding: 0.45rem 0.9rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      text-decoration: none;
+    }
+
+    /* Login Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(30, 27, 24, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+    }
+    .modal-content {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%; max-width: 480px;
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 2rem;
+      z-index: 2001;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border-light);
+      margin-bottom: 1.25rem;
+      h3 { font-size: 1.2rem; font-weight: 800; }
+    }
+    .close-btn { background: none; border: none; font-size: 1.25rem; cursor: pointer; }
+    .lock-circle {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #FEF3C7;
+      color: #D97706;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1.25rem;
+    }
+    .modal-desc {
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .modal-actions-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .btn-block { width: 100%; justify-content: center; padding: 0.75rem 1rem; }
+    .mt-2 { margin-top: 0.5rem; }
   `]
 })
 export class RequestServiceComponent {
   private bookingsService = inject(BookingsService);
-  private auth = inject(AuthService);
+  public auth = inject(AuthService);
   private router = inject(Router);
 
   services = HOME_CARE_SERVICES;
@@ -492,12 +634,13 @@ export class RequestServiceComponent {
 
   requestedCity: string = 'التجمع الخامس والقاهرة الجديدة';
   detailedAddress: string = this.auth.profile()?.address_line || '';
-  sessionDate: string = new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]; // Default in 2 days
+  sessionDate: string = new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0];
   sessionTime: string = '02:00 PM';
   customerName: string = this.auth.profile()?.full_name || '';
   customerPhone: string = this.auth.profile()?.phone || '';
   sessionNotes: string = '';
   isSubmitting: boolean = false;
+  showLoginModal: boolean = false;
 
   getSelectedService() {
     return this.services.find(s => s.id === this.selectedServiceId);
@@ -514,6 +657,12 @@ export class RequestServiceComponent {
   }
 
   async submitBookingRequest(): Promise<void> {
+    // Gate: Must be logged in to request a service
+    if (!this.auth.isAuthenticated()) {
+      this.showLoginModal = true;
+      return;
+    }
+
     if (!this.isFormValid()) return;
 
     this.isSubmitting = true;

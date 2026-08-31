@@ -19,6 +19,21 @@ import { AuthService } from '../../../core/services/auth.service';
             <p class="auth-subtitle">استمتعي بتجربة عناية استثنائية، عروض حصرية، ونقاط ولاء مع كل طلب وحجز</p>
           </div>
 
+          <!-- Confirmation Notice if Email Confirmation is required -->
+          <div class="confirmation-box animate-fade-in" *ngIf="showConfirmationNotice">
+            <div class="conf-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+            <h3>تم إنشاء حسابكِ بنجاح!</h3>
+            <p>
+              إذا كانت خاصية تأكيد البريد (Confirm email) مفعّلة في مشروعكِ على Supabase، يرجى تفقّد بريدكِ لتأكيد الحساب.
+            </p>
+            <p class="conf-sub">
+              (لتسجيل الدخول الفوري دون انتظار رسائل تأكيد، يمكنكِ إيقاف خيار Confirm Email من لوحة تحكم Supabase > Authentication > Providers > Email).
+            </p>
+            <a routerLink="/login" class="btn-primary btn-block mt-3">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> الانتقال لصفحة تسجيل الدخول
+            </a>
+          </div>
+
           <!-- Error Alert -->
           <div class="error-alert" *ngIf="errorMessage">
             <i class="fa-solid fa-circle-exclamation"></i>
@@ -26,7 +41,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
 
           <!-- Signup Form -->
-          <form (ngSubmit)="onSubmit()" class="auth-form">
+          <form (ngSubmit)="onSubmit()" class="auth-form" *ngIf="!showConfirmationNotice">
             <div class="form-group">
               <label>الاسم بالكامل <span class="req">*</span></label>
               <div class="input-with-icon">
@@ -300,6 +315,22 @@ import { AuthService } from '../../../core/services/auth.service';
         color: #FFFFFF;
       }
     }
+    .confirmation-box {
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      border-radius: 18px;
+      padding: 1.75rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      .conf-icon {
+        font-size: 2.5rem;
+        color: #10B981;
+        margin-bottom: 0.75rem;
+      }
+      h3 { font-size: 1.35rem; font-weight: 800; color: #065F46; margin-bottom: 0.5rem; }
+      p { font-size: 0.9rem; color: #047857; line-height: 1.6; margin: 0; }
+      .conf-sub { font-size: 0.82rem; color: #059669; margin-top: 0.75rem; }
+    }
   `]
 })
 export class SignupComponent {
@@ -314,6 +345,7 @@ export class SignupComponent {
   showPassword: boolean = false;
   isLoading: boolean = false;
   errorMessage: string = '';
+  showConfirmationNotice: boolean = false;
 
   async onSubmit(): Promise<void> {
     if (!this.fullName || !this.email || !this.password || !this.phone) return;
@@ -332,6 +364,11 @@ export class SignupComponent {
 
     if (!res.success) {
       this.errorMessage = res.error || 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى.';
+      return;
+    }
+
+    if (res.requiresEmailConfirmation) {
+      this.showConfirmationNotice = true;
       return;
     }
 

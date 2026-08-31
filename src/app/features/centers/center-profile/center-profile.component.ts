@@ -421,6 +421,7 @@ import { Provider } from '../../../core/models';
 })
 export class CenterProfileComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private centersService = inject(CentersService);
   private referralsService = inject(ReferralsService);
   auth = inject(AuthService);
@@ -442,6 +443,11 @@ export class CenterProfileComponent implements OnInit {
   }
 
   openClaimModal(): void {
+    if (!this.auth.isAuthenticated()) {
+      const centerId = this.center?.id || '';
+      this.router.navigate(['/login'], { queryParams: { returnUrl: `/centers/${centerId}` } });
+      return;
+    }
     this.claimedSuccessfully = false;
     this.claimNotes = '';
     this.isClaimModalOpen = true;

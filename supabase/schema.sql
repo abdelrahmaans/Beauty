@@ -141,11 +141,37 @@ drop policy if exists "customer submits proof" on payment_proofs;
 create policy "customer submits proof" on payment_proofs
   for insert with check (auth.uid() = user_id);
 
-drop policy if exists "admin reviews proof" on payment_proofs;
-create policy "admin reviews proof" on payment_proofs
-  for update using (
-    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
-  );
+-- Function: get_my_dashboard_context for role and status routing
+create or replace function get_my_dashboard_context()
+returns json
+language plpgsql security definer as $$
+declare
+  v_profile profiles;
+  v_provider providers;
+begin
+  select * into v_profile from profiles where id = auth.uid();
+
+  if v_profile.role = 'admin' then
+    return json_build_object('view', 'admin', 'status', 'verified');
+  end if;
+
+  select * into v_provider from providers where user_id = auth.uid() limit 1;
+
+  if v_provider.id is not null then
+    return json_build_object(
+      'view', case v_provider.type
+        when 'freelancer' then 'provider'
+        when 'center' then 'center'
+        else 'customer'
+      end,
+      'provider_id', v_provider.id,
+      'status', v_provider.status  -- pending / verified / trusted / suspended
+    );
+  end if;
+
+  return json_build_object('view', 'customer', 'status', 'verified');
+end;
+$$;
 
 -- =============================================================================
 -- 2. CORE TABLES (PHASE 1 - STORE)

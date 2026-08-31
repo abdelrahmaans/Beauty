@@ -332,3 +332,11 @@ export interface PaymentProof {
   reviewed_at?: string | null;
   created_at: string;
 }
+
+// Phase 6: Real Auth & Role Routing Context
+export interface UserDashboardContext {
+  view: 'admin' | 'provider' | 'center' | 'customer';
+  provider_id?: string;
+  status?: ProviderStatus; // 'pending' | 'verified' | 'trusted' | 'suspended'
+}
+

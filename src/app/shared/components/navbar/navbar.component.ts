@@ -13,7 +13,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <!-- Top Announcement & Multi-Role Demo Bar (Desktop / Tablet) -->
+    <!-- Top Announcement & Real Auth Status Bar (Desktop / Tablet) -->
     <div class="top-banner">
       <div class="container-custom banner-content">
         <div class="banner-item">
@@ -22,49 +22,35 @@ import { NotificationsService } from '../../../core/services/notifications.servi
         </div>
 
         <div class="banner-actions">
-          <span class="loyalty-badge" *ngIf="auth.isAuthenticated()">
-            <i class="fa-solid fa-gem"></i>
-            رصيدك: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة
-          </span>
+          <!-- When Logged In -->
+          <ng-container *ngIf="auth.isAuthenticated()">
+            <span class="loyalty-badge" *ngIf="auth.loyaltyPoints() > 0">
+              <i class="fa-solid fa-gem"></i>
+              رصيدك: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة
+            </span>
 
-          <!-- 4-Role Demo Switcher (Desktop) -->
-          <div class="demo-role-switcher hide-on-mobile">
-            <button
-              class="role-pill"
-              [class.active]="auth.userRole() === 'customer'"
-              (click)="auth.switchDemoRole('customer')"
-              title="تجربة كعميلة للمتجر والجلسات والمراكز"
-            >
-              <i class="fa-regular fa-user"></i> العميلة
-            </button>
+            <span class="user-greeting-top hide-on-mobile">
+              <i class="fa-regular fa-circle-user"></i>
+              أهلاً، <strong>{{ auth.profile()?.full_name?.split(' ')?.[0] }}</strong> ({{ getRoleLabel(auth.userRole()) }})
+            </span>
 
-            <button
-              class="role-pill provider-pill"
-              [class.active]="auth.userRole() === 'provider'"
-              (click)="auth.switchDemoRole('provider')"
-              title="تجربة كأخصائية تجميل فريلانسر"
-            >
-              <i class="fa-solid fa-wand-magic-sparkles"></i> الأخصائية
+            <button (click)="auth.signOut()" class="top-auth-btn hide-on-mobile" title="تسجيل الخروج">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i> خروج
             </button>
+          </ng-container>
 
-            <button
-              class="role-pill center-pill"
-              [class.active]="auth.userRole() === 'center'"
-              (click)="auth.switchDemoRole('center')"
-              title="تجربة كمدير مركز تجميل شريك"
-            >
-              <i class="fa-solid fa-store"></i> المركز الشريك
-            </button>
-
-            <button
-              class="role-pill admin-pill"
-              [class.active]="auth.userRole() === 'admin'"
-              (click)="auth.switchDemoRole('admin')"
-              title="تجربة كمديرة المنصة والترشيح"
-            >
-              <i class="fa-solid fa-shield-halved"></i> الأدمن
-            </button>
-          </div>
+          <!-- When Guest (Not logged in) -->
+          <ng-container *ngIf="!auth.isAuthenticated()">
+            <a routerLink="/login" class="top-auth-link">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول
+            </a>
+            <a routerLink="/signup" class="top-auth-link highlight hide-on-mobile">
+              <i class="fa-solid fa-user-plus"></i> حساب عميلة جديد
+            </a>
+            <a routerLink="/apply/provider" class="top-auth-link partner hide-on-mobile">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> انضمي كشريك
+            </a>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -133,11 +119,18 @@ import { NotificationsService } from '../../../core/services/notifications.servi
 
         <!-- Header Actions & Mobile Toggle -->
         <div class="header-actions">
-          <!-- Desktop Account Link -->
-          <a routerLink="/account" class="action-btn hide-on-mobile" title="حسابي">
-            <i class="fa-regular fa-user"></i>
-            <span class="action-label" *ngIf="auth.profile()">{{ auth.profile()?.full_name?.split(' ')?.[0] }}</span>
+          <!-- Desktop Guest Login Button -->
+          <a *ngIf="!auth.isAuthenticated()" routerLink="/login" class="btn-primary btn-sm hide-on-mobile">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول
           </a>
+
+          <!-- Desktop Logged In Account Link -->
+          <ng-container *ngIf="auth.isAuthenticated()">
+            <a routerLink="/account" class="action-btn hide-on-mobile" title="حسابي">
+              <i class="fa-regular fa-user"></i>
+              <span class="action-label">{{ auth.profile()?.full_name?.split(' ')?.[0] || 'حسابي' }}</span>
+            </a>
+          </ng-container>
 
           <!-- Cart Button (Always visible) -->
           <button (click)="cart.toggleDrawer()" class="action-btn cart-btn" title="سلة التسوق">
@@ -171,14 +164,34 @@ import { NotificationsService } from '../../../core/services/notifications.servi
     <aside class="mobile-nav-drawer show-on-mobile" [class.open]="isMobileMenuOpen()">
       <!-- Drawer Top Bar -->
       <div class="drawer-header">
-        <div class="drawer-user-info" *ngIf="auth.profile()">
+        <!-- Logged in state -->
+        <div class="drawer-user-info" *ngIf="auth.isAuthenticated()">
           <img
             [src]="auth.profile()?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'"
             class="user-avatar-mini"
           />
           <div>
-            <strong class="user-name">{{ auth.profile()?.full_name }}</strong>
+            <strong class="user-name">{{ auth.profile()?.full_name || 'عميلة المتجر' }}</strong>
             <span class="user-role-tag">{{ getRoleLabel(auth.userRole()) }}</span>
+          </div>
+          <button (click)="auth.signOut()" class="drawer-logout-btn" title="تسجيل الخروج">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <!-- Guest state -->
+        <div class="drawer-guest-banner" *ngIf="!auth.isAuthenticated()">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="fa-solid fa-sparkles text-primary"></i>
+            <strong>أهلاً بكِ في بيوتي</strong>
+          </div>
+          <div class="drawer-auth-btns">
+            <a routerLink="/login" (click)="closeMobileMenu()" class="btn-primary btn-micro">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> دخول
+            </a>
+            <a routerLink="/signup" (click)="closeMobileMenu()" class="btn-outline btn-micro">
+              <i class="fa-solid fa-user-plus"></i> حساب جديد
+            </a>
           </div>
         </div>
 
@@ -188,7 +201,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       </div>
 
       <!-- Loyalty Badge in Drawer -->
-      <div class="drawer-loyalty-box" *ngIf="auth.isAuthenticated()">
+      <div class="drawer-loyalty-box" *ngIf="auth.isAuthenticated() && auth.loyaltyPoints() > 0">
         <i class="fa-solid fa-gem"></i>
         <span>رصيد نقاط الولاء المتاح: <strong>{{ auth.loyaltyPoints() }}</strong> نقطة</span>
       </div>
@@ -252,57 +265,37 @@ import { NotificationsService } from '../../../core/services/notifications.servi
           <span>حسابي وتتبع طلبات المتجر</span>
         </a>
 
-        <!-- Portal / Management Links -->
-        <span class="drawer-section-title mt-3">البوابات والإدارة</span>
+        <!-- Portal / Management Links (Only if authorized) -->
+        <ng-container *ngIf="auth.isProvider() || auth.isCenter() || auth.isAdmin()">
+          <span class="drawer-section-title mt-3">البوابات والإدارة</span>
 
-        <a routerLink="/provider" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item provider-item">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>بوابة الأخصائيات (Freelancers)</span>
-        </a>
+          <a *ngIf="auth.isProvider() || auth.isAdmin()" routerLink="/provider" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item provider-item">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>بوابة الأخصائيات (Freelancers)</span>
+          </a>
 
-        <a routerLink="/center" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item center-item">
-          <i class="fa-solid fa-hotel"></i>
-          <span>بوابة المراكز الشريكة (Centers)</span>
-        </a>
+          <a *ngIf="auth.isCenter() || auth.isAdmin()" routerLink="/center" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item center-item">
+            <i class="fa-solid fa-hotel"></i>
+            <span>بوابة المراكز الشريكة (Centers)</span>
+          </a>
 
-        <a *ngIf="auth.isAdmin()" routerLink="/admin" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item admin-item">
-          <i class="fa-solid fa-gauge-high"></i>
-          <span>لوحة التحكم المركزية (Admin)</span>
-        </a>
+          <a *ngIf="auth.isAdmin()" routerLink="/admin" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item admin-item">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>لوحة التحكم المركزية (Admin)</span>
+          </a>
+        </ng-container>
       </div>
 
-      <!-- Mobile Demo Role Switcher -->
-      <div class="drawer-role-switcher">
-        <span class="switcher-title"><i class="fa-solid fa-shuffle"></i> تجربة المنصة بالأدوار المختلفة:</span>
-        <div class="role-grid">
-          <button
-            class="m-role-btn"
-            [class.active]="auth.userRole() === 'customer'"
-            (click)="switchRoleAndClose('customer')"
-          >
-            <i class="fa-regular fa-user"></i> العميلة
-          </button>
-          <button
-            class="m-role-btn provider"
-            [class.active]="auth.userRole() === 'provider'"
-            (click)="switchRoleAndClose('provider')"
-          >
-            <i class="fa-solid fa-wand-magic-sparkles"></i> الأخصائية
-          </button>
-          <button
-            class="m-role-btn center"
-            [class.active]="auth.userRole() === 'center'"
-            (click)="switchRoleAndClose('center')"
-          >
-            <i class="fa-solid fa-store"></i> المركز
-          </button>
-          <button
-            class="m-role-btn admin"
-            [class.active]="auth.userRole() === 'admin'"
-            (click)="switchRoleAndClose('admin')"
-          >
-            <i class="fa-solid fa-shield-halved"></i> الأدمن
-          </button>
+      <!-- Partner Onboarding Callout (for Guests and regular customers) -->
+      <div class="drawer-partners-callout" *ngIf="!auth.isProvider() && !auth.isCenter() && !auth.isAdmin()">
+        <span class="callout-title"><i class="fa-solid fa-handshake"></i> انضمي كشريك في المنصة:</span>
+        <div class="callout-chips">
+          <a routerLink="/apply/provider" (click)="closeMobileMenu()" class="callout-link">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> انضمي كأخصائية فريلانسر
+          </a>
+          <a routerLink="/apply/center" (click)="closeMobileMenu()" class="callout-link">
+            <i class="fa-solid fa-store"></i> سجلي كمركز تجميل شريك
+          </a>
         </div>
       </div>
     </aside>
@@ -352,31 +345,50 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       color: #FFD966;
       font-size: 0.75rem;
     }
-    .demo-role-switcher {
-      display: inline-flex;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 9999px;
-      padding: 2px;
-      gap: 2px;
-    }
-    .role-pill {
-      background: transparent;
-      border: none;
-      color: rgba(255, 255, 255, 0.75);
-      font-size: 0.72rem;
-      padding: 0.15rem 0.55rem;
-      border-radius: 9999px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s ease;
+    .user-greeting-top {
+      color: #E2E8F0;
+      font-size: 0.78rem;
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
-
-      &.active { background: #FFFFFF; color: #1E1B18; font-weight: 700; }
-      &.provider-pill.active { background: #10B981; color: #FFFFFF; }
-      &.center-pill.active { background: #D97706; color: #FFFFFF; }
-      &.admin-pill.active { background: #C46D5B; color: #FFFFFF; }
+      gap: 0.35rem;
+      strong { color: #FFFFFF; font-weight: 700; }
+    }
+    .top-auth-link {
+      color: #FAF7F5;
+      font-size: 0.78rem;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      transition: var(--transition-smooth);
+      &:hover { background: rgba(255, 255, 255, 0.15); }
+      &.highlight {
+        background: var(--color-primary);
+        color: #fff;
+        font-weight: 700;
+      }
+      &.partner {
+        color: #FDE68A;
+      }
+    }
+    .top-auth-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #FCA5A5;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: var(--transition-smooth);
+      &:hover { background: #EF4444; color: #FFFFFF; }
     }
 
     /* Main Header */
@@ -682,49 +694,75 @@ import { NotificationsService } from '../../../core/services/notifications.servi
       margin-right: auto;
     }
 
-    .drawer-role-switcher {
-      padding: 1.25rem;
+    .drawer-guest-banner {
       background: #FAF7F5;
+      border: 1px solid var(--color-border-light);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      width: 100%;
+      margin-left: 0.75rem;
+      strong { font-size: 0.9rem; color: var(--color-text-main); display: block; }
+    }
+    .drawer-auth-btns {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .drawer-logout-btn {
+      background: none;
+      border: 1px solid #FECACA;
+      color: #EF4444;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-right: auto;
+      transition: var(--transition-smooth);
+      &:hover { background: #FEF2F2; }
+    }
+    .drawer-partners-callout {
+      margin: 1.5rem 1rem;
+      padding-top: 1.25rem;
       border-top: 1px solid var(--color-border-light);
     }
-    .switcher-title {
+    .callout-title {
       font-size: 0.78rem;
       font-weight: 700;
       color: var(--color-text-muted);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-bottom: 0.75rem;
+      display: block;
+      margin-bottom: 0.65rem;
     }
-    .role-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .callout-chips {
+      display: flex;
+      flex-direction: column;
       gap: 0.5rem;
     }
-    .m-role-btn {
-      padding: 0.55rem 0.65rem;
-      background: #FFFFFF;
+    .callout-link {
+      background: #FAF7F5;
       border: 1px solid var(--color-border);
       border-radius: 10px;
-      font-family: inherit;
-      font-size: 0.8rem;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
-      color: var(--color-text-muted);
-      cursor: pointer;
+      color: var(--color-primary);
+      text-decoration: none;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
+      gap: 0.5rem;
       transition: var(--transition-smooth);
-
-      &.active {
-        background: var(--color-primary);
-        color: #fff;
-        border-color: var(--color-primary);
-      }
-      &.provider.active { background: #10B981; border-color: #10B981; }
-      &.center.active { background: #D97706; border-color: #D97706; }
-      &.admin.active { background: #C46D5B; border-color: #C46D5B; }
+      &:hover { background: #FFFFFF; border-color: var(--color-primary); }
+    }
+    .btn-sm {
+      padding: 0.45rem 0.95rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
     }
 
     @keyframes fadeIn {
@@ -761,17 +799,12 @@ export class NavbarComponent {
     this.isMobileMenuOpen.set(false);
   }
 
-  switchRoleAndClose(role: 'admin' | 'customer' | 'provider' | 'center'): void {
-    this.auth.switchDemoRole(role);
-    this.closeMobileMenu();
-  }
-
   getRoleLabel(role: string): string {
     const map: Record<string, string> = {
       customer: 'عميلة المنصة',
-      provider: 'أخصائية تجميل فريلانسر',
-      center: 'إدارة مركز تجميل شريك',
-      admin: 'مديرة العمليات المركزية'
+      provider: 'أخصائية فريلانسر',
+      center: 'مركز تجميل شريك',
+      admin: 'الإدارة والعمليات'
     };
     return map[role] || 'مستخدم';
   }

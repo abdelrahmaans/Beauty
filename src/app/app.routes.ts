@@ -12,7 +12,13 @@ import { CentersNearbyComponent } from './features/centers/centers-nearby/center
 import { CenterProfileComponent } from './features/centers/center-profile/center-profile.component';
 import { MyReferralsComponent } from './features/centers/my-referrals/my-referrals.component';
 import { CenterPortalComponent } from './features/center-portal/center-portal.component';
-import { adminGuard } from './core/guards/auth.guard';
+import { LoginComponent } from './features/auth/login/login.component';
+import { SignupComponent } from './features/auth/signup/signup.component';
+import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password.component';
+import { ApplyProviderComponent } from './features/auth/apply-provider/apply-provider.component';
+import { ApplyCenterComponent } from './features/auth/apply-center/apply-center.component';
+import { PendingReviewComponent } from './features/auth/pending-review/pending-review.component';
+import { roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -20,6 +26,39 @@ export const routes: Routes = [
     component: HomeComponent,
     title: 'منصة بيوتي | متجر وجلسات ومراكز العناية الفاخرة'
   },
+  // Auth & Onboarding Routes
+  {
+    path: 'login',
+    component: LoginComponent,
+    title: 'تسجيل الدخول | منصة بيوتي'
+  },
+  {
+    path: 'signup',
+    component: SignupComponent,
+    title: 'إنشاء حساب عميلة جديدة | منصة بيوتي'
+  },
+  {
+    path: 'forgot-password',
+    component: ForgotPasswordComponent,
+    title: 'استعادة كلمة المرور | منصة بيوتي'
+  },
+  {
+    path: 'apply/provider',
+    component: ApplyProviderComponent,
+    title: 'انضمي كأخصائية فريلانسر | منصة بيوتي'
+  },
+  {
+    path: 'apply/center',
+    component: ApplyCenterComponent,
+    title: 'تسجيل مركز تجميل شريك | منصة بيوتي'
+  },
+  {
+    path: 'pending-review',
+    component: PendingReviewComponent,
+    title: 'حسابكِ قيد المراجعة والتدقيق | منصة بيوتي'
+  },
+
+  // Storefront & Public
   {
     path: 'products',
     component: CatalogComponent,
@@ -60,27 +99,33 @@ export const routes: Routes = [
     component: CenterProfileComponent,
     title: 'بروفايل المركز الشريك | منصة بيوتي'
   },
+
+  // Role Protected Portals
   {
     path: 'provider',
     component: ProviderPortalComponent,
+    canActivate: [roleGuard(['provider', 'admin'])],
     title: 'بوابة الأخصائيات والفريلانسرز | منصة بيوتي'
   },
   {
     path: 'center',
     component: CenterPortalComponent,
+    canActivate: [roleGuard(['center', 'admin'])],
     title: 'بوابة المراكز الشريكة | منصة بيوتي'
   },
   {
     path: 'account',
     component: AccountComponent,
+    canActivate: [roleGuard(['customer', 'admin', 'provider', 'center'])],
     title: 'حسابي والطلبات | منصة بيوتي'
   },
   {
     path: 'admin',
     component: AdminComponent,
-    canActivate: [adminGuard],
+    canActivate: [roleGuard(['admin'])],
     title: 'لوحة التحكم المركزية | منصة بيوتي'
   },
+
   {
     path: '**',
     redirectTo: ''

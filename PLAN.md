@@ -1,4 +1,4 @@
-# 📋 خطة تنفيذ ومتابعة مشروع منصة العناية بالشعر والبشرة (Store + Home Sessions + Centers + Banners + Mobile + Manual Payments)
+# 📋 خطة تنفيذ ومتابعة مشروع منصة العناية بالشعر والبشرة (Store + Home Sessions + Centers + Banners + Mobile + Manual Payments + Real Auth)
 
 > **الحالة العامة**: 🚀 قيد التشغيل والتطوير المستمر  
 > **الستاك**: Angular 22 (Standalone + Signals) + Supabase (PostgreSQL, Auth, RLS, Storage)  
@@ -8,6 +8,7 @@
 > 3. 🟢 المرحلة الثالثة: دليل المراكز الشريكة وتتبع أكواد الإحالة والخصم (Beauty Centers Directory & Referral Tracking)
 > 4. 🟢 المرحلة الرابعة: البانرات الترويجية وتجاوب الجوال المتكامل (Promotional Banners & Mobile Drawer)
 > 5. 🟢 المرحلة الخامسة: منظومة الدفع اليدوي المجاني وإثباتات التحويل (Manual Payment Proof System)
+> 6. 🟢 المرحلة السادسة: التوثيق الحقيقي والتوجيه حسب الرول واستعادة كلمة المرور (Real Supabase Auth & Role Routing)
 
 ---
 
@@ -32,82 +33,29 @@
    - **لوحة تحكم الإدارة (`/admin`)**: متابعة وتدقيق الإحالات المعلقة (`claimed`) وعمولات المنصة والتسويات المالية.
 
 4. **البانرات الترويجية وقائمة الموبايل المتجاوبة (Phase 4 - Banners & Mobile Responsive)**:
-   - **سلايدر البانرات في الصفحة الرئيسية (`homepage-banners`)**: كاروسيل أوتوماتيكي متجاوب بنوعين (كوبونات خصم تتيح النسخ والتطبيق الفوري + إعلانات وفعاليات موجهة).
-   - **قائمة الموبايل الجانبية الفاخرة (Mobile Navigation Drawer)**: زر هامبرغر متجاوب يفتح قائمة جانبية منزلقة تضم بروفايل المستخدم، رصيد نقاط الولاء، بحث الجوال السريع، روابط كافة الخدمات، ومحول الأدوار السريع.
-   - **إدارة البانرات في لوحة الأدمن (`/admin`)**: استعراض البانرات، زر تفعيل/تعطيل لحظي، ومودال إضافة وتعديل البانر وربطه بالكوبونات وتحديد فترة سريانه.
+   - **سلايدر البانرات في الصفحة الرئيسية (`homepage-banners`)**: كاروسيل أوتوماتيكي متجاوب (تم تعطيله مؤقتاً بالـ Comment Out بطلب المستخدم مع الحفاظ على الكود كاملاً).
+   - **قائمة الموبايل الجانبية الفاخرة (Mobile Navigation Drawer)**: زر هامبرغر متجاوب يفتح قائمة جانبية منزلقة تضم بروفايل المستخدم، رصيد نقاط الولاء، بحث الجوال السريع، وروابط كافة الخدمات وبوابات الشركاء.
 
 5. **منظومة الدفع اليدوي المجاني وإثباتات التحويل (Phase 5 - Manual Payment Proof System)**:
    - **قنوات تحويل مصرية معتمدة**: InstaPay، محفظة فودافون كاش، وحساب بنك CIB مع أزرار نسخ فورية لأرقام الحسابات.
    - **مكون رفع الإثبات المشترك (`UploadPaymentProofComponent`)**: حقول القناة واسم المحوّل والمبلغ المطلوب وصورة الإيصال مع المعاينة الحية.
    - **تكامل المتجر والحجوزات**: مدمج بالـ Checkout للمتجر، وبمودال مراجعة عروض الجلسات المنزلية (`my-bookings`).
-   - **طابور مراجعة المدفوعات للأدمن (`/admin/payments`)**: شاشة تفاعلية لمراجعة صور الإيصالات وتكبيرها، واعتماد الدفع فوراً أو الرفض مع ذكر السبب وإشعار العميلة.
-   - **تريجر قاعدة البيانات (`apply_payment_approval`)**: تحديث حالة الطلبات والحجوزات آلياً فور موافقة الأدمن.
+   - **طابور مراجعة المدفوعات للأدمن (`/admin`)**: شاشة تفاعلية لمراجعة صور الإيصالات وتكبيرها، واعتماد الدفع فوراً أو الرفض مع ذكر السبب وإشعار العميلة.
 
----
-
-## 📊 مسار المهام والإنجاز (Milestones & Tasks)
-
-### 🟢 المرحلة 1: تهيئة المشروع وبيئة العمل
-- [x] إعداد مستودع Git وربط الـ Remote.
-- [x] تهيئة مشروع Angular 22 (Standalone Components + SCSS + Routing).
-- [x] تثبيت مكتبة `@supabase/supabase-js`.
-- [x] إنشاء ملف `PLAN.md` وملف `README.md`.
-- [x] إنشاء ملف `supabase/schema.sql` بكامل الجداول والـ Enums و RLS.
-
-### 🟢 المرحلة 2: البنية التحتية والربط مع Supabase (Core Architecture)
-- [x] إعداد ملفات البيئة `environment.ts` و `environment.development.ts`.
-- [x] إنشاء `SupabaseService` كـ Client رئيسي مع fallback آمن للتطوير.
-- [x] إنشاء `AuthService` مع إدارة الحالة عبر Signals ومفتاح التبديل الرباعي السريع (عميلة / أخصائية / مركز شريك / أدمن).
-- [x] إنشاء الـ Models والـ Types لجميع الكيانات (Store + Phase 2 Bookings + Phase 3 Centers + Phase 4 Banners + Phase 5 Payments).
-- [x] إنشاء الـ Guards (`authGuard`, `adminGuard`).
-- [x] إنشاء الـ Mock Data الغنية للمنتجات والجلسات والمراكز والبانرات الترويجية وقنوات الدفع.
-
-### 🟢 المرحلة 3: نظام التصميم والمكونات المشتركة (Design System & UI Components)
-- [x] ضبط نظام الألوان (Rose gold / Warm neutrals / Emerald accents / Dark-Light theme).
-- [x] خطوط عربية فاخرة (Cairo / Plus Jakarta Sans) ودعم RTL كامل.
-- [x] مكونات UI المشتركة (Navbar, Footer, ProductCard, CartDrawer).
-- [x] قائمة الموبايل المنزلقة (Mobile Drawer) وزر الهامبرغر المتجاوب.
-
-### 🟢 المرحلة 4: خدمات المتجر وإدارة الحالة (Store Services with Signals)
-- [x] `ProductsService`, `CartService`, `CouponsService`, `OrdersService`, `BannersService`, `PaymentProofsService`.
-
-### 🟢 المرحلة 5: صفحات المتجر للعملاء (Customer Storefront Pages)
-- [x] **HomeComponent**, **CatalogComponent**, **ProductDetailsComponent**, **CheckoutComponent**.
-- [x] **HomepageBannersComponent** مدمج في الصفحة الرئيسية.
-- [x] خيار الدفع بالتحويل المباشر مع رفع إيصال التحويل في الـ Checkout.
-
-### 🟢 المرحلة 6: لوحة تحكم الإدارة المركزية (Admin Dashboard)
-- [x] لوحة الإحصائيات (Overview Analytics): مبيعات المتجر، طلبات الجلسات، المراكز الشريكة، عمولات المنصة.
-- [x] طابور مراجعة إثباتات الدفع والتحويلات اليدوية (`activeTab === 'payments'`).
-- [x] إدارة المنتجات، الطلبات، والكوبونات.
-- [x] طابور الترشيح والمطابقة الذكية للجلسات المنزلية.
-- [x] شاشة متابعة وتدقيق إحالات المراكز وتنبيهات التدقيق (Audit Alerts) وتسجيل التحصيل.
-- [x] شاشة إدارة البانرات الترويجية وتفعيلها/تعطيلها وإضافتها.
-
-### 🟢 المرحلة 7: حساب العميل وتاريخ الطلبات ونقاط الولاء
-- [x] الملف الشخصي، تتبع الطلبات مع شارات التحويلات اليدوية، ومحفظة نقاط الولاء.
-
-### 🟢 المرحلة 8: سوق الجلسات المنزلية وبوابة الفريلانسرز (Phase 2 - Home Care Sessions)
-- [x] صفحة طلب الجلسة المنزلية (`/booking/request`).
-- [x] صفحة متابعة الجلسات وتأكيد العرض والتقييم (`/booking/my-bookings`).
-- [x] بوابة الأخصائيات والفريلانسرز ومتابعة الأرباح (`/provider`).
-
-### 🟢 المرحلة 9: دليل المراكز الشريكة وبوابة المركز وتتبع الإحالات (Phase 3 - Centers Directory)
-- [x] دليل المراكز والبحث الجغرافي (`/centers`).
-- [x] بروفايل المركز الشريك (`/centers/:id`).
-- [x] صفحة أكوادي وإحالاتي (`/centers/my-codes`).
-- [x] بوابة المركز الشريك (`/center`).
-
-### 🟢 المرحلة 10: البانرات الترويجية والريسبونسيف المتكامل (Phase 4 - Banners & Mobile)
-- [x] جدول `banners` والـ View `active_banners` في قاعدة البيانات.
-- [x] مكون سلايدر البانرات الترويجي الذكي في الصفحة الرئيسية.
-- [x] ناف بار متجاوب 100% مع قائمة منزلقة فاخرة للموبايل والتابلت.
-
-### 🟢 المرحلة 11: منظومة الدفع اليدوي المجاني وإثباتات التحويل (Phase 5 - Manual Payment Proofs)
-- [x] جدول `payment_proofs` والتريجر `apply_payment_approval` وسياسات RLS في قاعدة البيانات.
-- [x] مكون `UploadPaymentProofComponent` المشترك للمتجر والحجوزات.
-- [x] ربط الدفع اليدوي في الـ Checkout وحجوزاتي مع شارات "بانتظار مراجعة التحويل".
-- [x] شاشة مراجعة الإيصالات وتكبير الصور واعتماد/رفض التحويلات في لوحة الأدمن.
+6. **التوثيق الحقيقي والتوجيه حسب الرول (Phase 6 - Real Supabase Auth & Role Routing)**:
+   - **إلغاء شريط التبديل التجريبي القديم**: تم استبدال المحاكاة بنظام جلسات حقيقي عبر Supabase Auth في الناف بار وقائمة الموبايل.
+   - **دالة قاعدة البيانات المركزية (`get_my_dashboard_context()`)**: ترجع نوع العرض (`admin`, `provider`, `center`, `customer`) وحالة التوثيق (`pending`, `verified`, `trusted`).
+   - **تسجيل العميلة المباشر (`/signup`)**: مخصص للعميلات فقط مع إضافة 50 نقطة ولاء ترحيبية.
+   - **استمارات انضمام الشركاء المستقلين والمراكز الشريكة**:
+     - للأخصائيات (`/apply/provider`): تسجيل التخصصات وسابقة الأعمال ونطاق التغطية وتنشئ حسابهن بحالة `pending`.
+     - للمراكز الشريكة (`/apply/center`): تسجيل اسم المركز والعنوان ونسبة الخصم المقترحة وساعات العمل وتنشئ حسابهن بحالة `pending`.
+   - **صفحة الحساب قيد المراجعة (`/pending-review`)**: توجه الحسابات المعلقة تلقائياً وتتيح التواصل مع الدعم أو تسجيل الخروج.
+   - **استعادة كلمة المرور (`/forgot-password`)**: إرسال رابط آمن عبر البريد الإلكتروني لإعادة التعيين.
+   - **الحراسة والتوجيه التلقائي (`roleGuard`)**: حماية كافة البوابات وتوجيه كل رول لبوابته المخصصة ومنع الوصول غير المصرح به.
+   - **بيانات الديمو والتنظيف**:
+     - `supabase/seed.sql`: سكريبت لتغذية Supabase بالبيانات التجريبية الحية.
+     - `supabase/cleanup.sql`: سكريبت لتفريغ وتنظيف بيانات الديمو قبل الإطلاق الرسمي.
+     - ضبط بيئة العمل `enableMockFallback: false`.
 
 ---
 
@@ -117,4 +65,5 @@
 - `f360f67`: `feat(phase2): implement home care sessions marketplace, specialist portal, matching queue, and booking lifecycle`
 - `82b210f`: `feat(phase3): implement partner beauty centers directory, referral discount codes, center portal and commission tracking`
 - `60bc36e`: `feat(banners-mobile): implement promotional banners carousel, admin management, and responsive mobile drawer`
-- `feat(payments): implement manual payment proof system for store and home bookings with admin review queue`
+- `aa42390`: `feat(payments): implement manual payment proof system for store and home bookings with admin review queue`
+- `feat(auth): implement real Supabase auth, role-based routing, customer signup, partner onboarding, password reset and seed/cleanup scripts`

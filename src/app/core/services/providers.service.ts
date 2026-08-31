@@ -206,8 +206,6 @@ export class ProvidersService {
     this._providers.update(list => [newProvider, ...list]);
     this.saveProviders();
 
-    // Switch auth role to provider
-    this.auth.switchDemoRole('provider');
     this.auth.updateProfileData({
       role: 'provider',
       full_name: payload.displayName,

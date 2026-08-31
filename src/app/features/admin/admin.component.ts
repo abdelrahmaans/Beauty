@@ -488,32 +488,64 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           </div>
         </div>
 
-        <!-- Tab 2: Provider Verification & Documents -->
+        <!-- Tab 2: Provider Verification & Approvals -->
         <div class="tab-panel beauty-card" *ngIf="activeTab === 'providers'">
           <div class="panel-header">
-            <h3>سجل الأخصائيات ومراجعة وثائق التوثيق</h3>
+            <div>
+              <h3>سجل الشركاء وطلبات الانضمام والتوثيق</h3>
+              <p class="panel-subtitle text-muted">اعتمادي طلبات الأخصائيات والمراكز الشريكة المعلقة بنقرة واحدة لتفعيل حساباتهم فوراً</p>
+            </div>
+            <div class="filter-pills">
+              <button class="badge-pill" [class.active]="providerFilter === 'all'" (click)="providerFilter = 'all'">الكل ({{ providersService.providers().length }})</button>
+              <button class="badge-pill warning" [class.active]="providerFilter === 'pending'" (click)="providerFilter = 'pending'">
+                قيد المراجعة ({{ getPendingProvidersCount() }})
+              </button>
+              <button class="badge-pill" [class.active]="providerFilter === 'freelancer'" (click)="providerFilter = 'freelancer'">أخصائيات فريلانسر</button>
+              <button class="badge-pill" [class.active]="providerFilter === 'center'" (click)="providerFilter = 'center'">مراكز تجميل</button>
+            </div>
           </div>
 
           <div class="providers-admin-grid">
-            <div class="provider-admin-card" *ngFor="let p of providersService.providers()">
+            <div class="provider-admin-card" *ngFor="let p of getFilteredProviders()">
               <div class="pa-header">
-                <img [src]="p.avatar_url" class="pa-avatar" />
+                <img [src]="p.avatar_url || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80'" class="pa-avatar" />
                 <div>
-                  <span class="badge-pill" [ngClass]="p.status">{{ p.status }}</span>
+                  <div class="pa-tags">
+                    <span class="badge-pill" [ngClass]="p.status">{{ getProviderStatusArabic(p.status) }}</span>
+                    <span class="type-tag">{{ p.type === 'center' ? 'مركز تجميل' : 'أخصائية فريلانسر' }}</span>
+                  </div>
                   <h4 class="pa-name">{{ p.display_name }}</h4>
-                  <span class="pa-city"><i class="fa-solid fa-location-dot"></i> {{ p.city }}</span>
+                  <span class="pa-city"><i class="fa-solid fa-location-dot"></i> {{ p.city }} <ng-container *ngIf="p.phone">• {{ p.phone }}</ng-container></span>
                 </div>
               </div>
-              <div class="pa-specialties">
+
+              <!-- Bio & Address -->
+              <p class="pa-bio" *ngIf="p.bio">{{ p.bio }}</p>
+              <p class="pa-address text-muted" *ngIf="p.address_line"><i class="fa-solid fa-map-pin"></i> {{ p.address_line }}</p>
+
+              <div class="pa-specialties" *ngIf="p.specialties && p.specialties.length > 0">
                 <span class="sp-chip" *ngFor="let s of p.specialties">{{ s }}</span>
               </div>
-              <div class="pa-docs" *ngIf="p.documents && p.documents.length > 0">
-                <span class="docs-lbl">مستندات التوثيق:</span>
-                <div class="doc-item" *ngFor="let d of p.documents">
-                  <i class="fa-solid fa-file-pdf"></i>
-                  <span>{{ d.title }}</span>
-                  <span class="doc-badge" [class.verified]="d.reviewed">{{ d.reviewed ? 'تم التوثيق ✓' : 'بانتظار المراجعة' }}</span>
-                  <button *ngIf="!d.reviewed" (click)="verifyDoc(p.id, d.id)" class="btn-micro">اعتماد التوثيق</button>
+
+              <!-- Quick Approval Actions for Admin -->
+              <div class="pa-admin-actions">
+                <div class="pending-approval-box" *ngIf="p.status === 'pending'">
+                  <button (click)="approveProvider(p.id)" class="btn-primary btn-micro">
+                    <i class="fa-solid fa-check"></i> اعتماد وتفعيل الحساب فوراً
+                  </button>
+                  <button (click)="rejectProvider(p.id)" class="btn-outline btn-micro text-danger">
+                    <i class="fa-solid fa-xmark"></i> رفض
+                  </button>
+                </div>
+
+                <div class="status-changer" *ngIf="p.status !== 'pending'">
+                  <label>تغيير الحالة:</label>
+                  <select [ngModel]="p.status" (ngModelChange)="updateProviderStatus(p.id, $event)" class="status-select">
+                    <option value="verified">معتمد ونشط ✓</option>
+                    <option value="trusted">موثوق مميز ★</option>
+                    <option value="pending">قيد المراجعة</option>
+                    <option value="suspended">موقوف مؤقتاً</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -1018,14 +1050,23 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
     .admin-quick-status { display: flex; align-items: center; gap: 0.5rem; label { font-size: 0.82rem; } }
 
     /* Provider Verification Tab */
-    .providers-admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .filter-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .badge-pill.warning { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+    .providers-admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
     .provider-admin-card { border: 1px solid var(--color-border); border-radius: 16px; padding: 1.25rem; background: #FAF7F5; }
-    .pa-header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+    .pa-header { display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem; }
     .pa-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+    .pa-tags { display: flex; gap: 0.4rem; align-items: center; }
+    .type-tag { font-size: 0.72rem; font-weight: 700; color: #4B5563; background: #E5E7EB; padding: 0.15rem 0.5rem; border-radius: 6px; }
     .pa-name { font-size: 1.05rem; font-weight: 800; margin: 0.2rem 0; }
     .pa-city { font-size: 0.78rem; color: var(--color-text-subtle); }
-    .pa-specialties { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+    .pa-bio { font-size: 0.82rem; color: var(--color-text-main); margin: 0.4rem 0; line-height: 1.5; }
+    .pa-address { font-size: 0.78rem; margin-bottom: 0.6rem; }
+    .pa-specialties { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.85rem; }
     .sp-chip { font-size: 0.72rem; background: #FFFFFF; border: 1px solid var(--color-border); padding: 0.2rem 0.5rem; border-radius: 9999px; }
+    .pa-admin-actions { border-top: 1px solid var(--color-border-light); padding-top: 0.85rem; margin-top: 0.5rem; }
+    .pending-approval-box { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .status-changer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; label { font-size: 0.8rem; font-weight: 700; } }
     .pa-docs { border-top: 1px solid var(--color-border-light); padding-top: 0.75rem; }
     .docs-lbl { font-size: 0.78rem; font-weight: 700; color: var(--color-text-muted); display: block; margin-bottom: 0.4rem; }
     .doc-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: #FFFFFF; padding: 0.45rem 0.75rem; border-radius: 8px; font-size: 0.8rem; margin-bottom: 0.35rem; }
@@ -1214,6 +1255,50 @@ export class AdminComponent {
       reported: 'بلاغ قيد المراجعة'
     };
     return map[status] || status;
+  }
+
+  providerFilter: 'all' | 'pending' | 'freelancer' | 'center' = 'all';
+
+  getPendingProvidersCount(): number {
+    return this.providersService.providers().filter(p => p.status === 'pending').length;
+  }
+
+  getFilteredProviders(): Provider[] {
+    let list = this.providersService.providers();
+    if (this.providerFilter === 'pending') {
+      return list.filter(p => p.status === 'pending');
+    }
+    if (this.providerFilter === 'freelancer') {
+      return list.filter(p => p.type === 'freelancer');
+    }
+    if (this.providerFilter === 'center') {
+      return list.filter(p => p.type === 'center');
+    }
+    return list;
+  }
+
+  getProviderStatusArabic(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'قيد المراجعة والتوثيق',
+      verified: 'معتمد ونشط ✓',
+      trusted: 'موثوق مميز ★',
+      suspended: 'موقوف مؤقتاً'
+    };
+    return map[status] || status;
+  }
+
+  async approveProvider(providerId: string): Promise<void> {
+    await this.providersService.updateProviderStatus(providerId, 'verified');
+  }
+
+  async rejectProvider(providerId: string): Promise<void> {
+    if (confirm('هل أنتِ متأكدة من إيقاف أو رفض هذا الشريك؟')) {
+      await this.providersService.updateProviderStatus(providerId, 'suspended');
+    }
+  }
+
+  async updateProviderStatus(providerId: string, status: any): Promise<void> {
+    await this.providersService.updateProviderStatus(providerId, status);
   }
 
   getRedemptionStatusArabic(status: RedemptionStatus): string {

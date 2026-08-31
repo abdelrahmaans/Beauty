@@ -8,8 +8,9 @@ import { BookingsService } from '../../core/services/bookings.service';
 import { ProvidersService } from '../../core/services/providers.service';
 import { CentersService } from '../../core/services/centers.service';
 import { ReferralsService } from '../../core/services/referrals.service';
+import { BannersService } from '../../core/services/banners.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus, RedemptionStatus, ReferralRedemption } from '../../core/models';
+import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus, RedemptionStatus, ReferralRedemption, Banner } from '../../core/models';
 import { MOCK_COUPONS } from '../../core/mock/mock-data';
 
 @Component({
@@ -22,10 +23,13 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
         <!-- Admin Top Bar -->
         <div class="admin-topbar">
           <div>
-            <span class="badge-luxury">لوحة إدارة المتجر + سوق الجلسات + دليل المراكز</span>
+            <span class="badge-luxury">لوحة إدارة المتجر + سوق الجلسات + دليل المراكز + البانرات</span>
             <h1 class="admin-title">نظام التحكم والعمليات المركزي</h1>
           </div>
           <div class="admin-actions">
+            <button (click)="openNewBannerModal()" class="btn-outline">
+              <i class="fa-solid fa-rectangle-ad"></i> إضافة بانر جديد
+            </button>
             <button (click)="openNewProductModal()" class="btn-primary">
               <i class="fa-solid fa-plus"></i> إضافة منتج جديد
             </button>
@@ -75,6 +79,13 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
         <div class="dashboard-tabs">
           <button
             class="tab-btn"
+            [class.active]="activeTab === 'banners'"
+            (click)="activeTab = 'banners'"
+          >
+            <i class="fa-solid fa-rectangle-ad"></i> البانرات الترويجية ({{ bannersService.banners().length }})
+          </button>
+          <button
+            class="tab-btn"
             [class.active]="activeTab === 'centers_referrals'"
             (click)="activeTab = 'centers_referrals'"
           >
@@ -115,6 +126,73 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           >
             <i class="fa-solid fa-ticket"></i> الكوبونات
           </button>
+        </div>
+
+        <!-- Tab: Promotional Banners Management (Phase 4) -->
+        <div class="tab-panel beauty-card animate-fade-in" *ngIf="activeTab === 'banners'">
+          <div class="panel-header">
+            <div>
+              <span class="badge-emerald">إدارة سلايدر وبانرات الصفحة الرئيسية (Phase 4)</span>
+              <h3 class="mt-1">قائمة البانرات الترويجية الفعّالة والمجدولة</h3>
+            </div>
+            <button (click)="openNewBannerModal()" class="btn-primary">
+              <i class="fa-solid fa-plus"></i> إضافة بانر جديد
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>صورة البانر</th>
+                  <th>العنوان والنص الترويجي</th>
+                  <th>النوع</th>
+                  <th>كوبون الخصم المرتبط</th>
+                  <th>الترتيب</th>
+                  <th>الحالة</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let b of bannersService.banners()">
+                  <td>
+                    <img [src]="b.image_storage_path" [alt]="b.title" class="banner-thumb" />
+                  </td>
+                  <td>
+                    <strong>{{ b.title }}</strong>
+                    <small class="d-block text-muted" *ngIf="b.subtitle">{{ b.subtitle }}</small>
+                    <small class="d-block text-primary mt-1" *ngIf="b.cta_text">زر الـ CTA: "{{ b.cta_text }}" ({{ b.cta_link || 'المتجر' }})</small>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class.active]="b.type === 'coupon'" [class.disabled]="b.type === 'announcement'">
+                      {{ b.type === 'coupon' ? 'كوبون خصم' : 'إعلان / خبر' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="code-pill" *ngIf="b.coupon">{{ b.coupon.code }} (خصم {{ b.coupon.discount_type === 'percentage' ? b.coupon.value + '%' : b.coupon.value + ' ج.م' }})</span>
+                    <span *ngIf="!b.coupon" class="text-muted">—</span>
+                  </td>
+                  <td><strong>#{{ b.sort_order }}</strong></td>
+                  <td>
+                    <button
+                      (click)="bannersService.toggleBannerActive(b.id)"
+                      class="toggle-active-btn"
+                      [class.active]="b.is_active"
+                    >
+                      <i class="fa-solid" [ngClass]="b.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                      <span>{{ b.is_active ? 'مفعّل' : 'معطّل' }}</span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="row-actions">
+                      <button (click)="openEditBannerModal(b)" class="action-icon edit" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></button>
+                      <button (click)="deleteBanner(b.id)" class="action-icon delete" title="حذف"><i class="fa-regular fa-trash-can"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Tab: Phase 3 Partner Centers & Referral Tracking -->
@@ -518,6 +596,81 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
           <button (click)="saveProduct()" class="btn-primary">حفظ المنتج</button>
         </div>
       </div>
+
+      <!-- Add/Edit Promotional Banner Modal Dialog (Phase 4) -->
+      <div class="modal-backdrop" *ngIf="isBannerModalOpen" (click)="closeBannerModal()"></div>
+      <div class="modal-content beauty-card animate-fade-in" *ngIf="isBannerModalOpen">
+        <div class="modal-header">
+          <h3>{{ editingBanner?.id ? 'تعديل البانر الترويجي' : 'إضافة بانر ترويجي جديد' }}</h3>
+          <button (click)="closeBannerModal()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>نوع البانر <span class="req">*</span></label>
+              <select [(ngModel)]="formBanner.type" class="input-custom">
+                <option value="coupon">بانر كود خصم (Coupon Banner)</option>
+                <option value="announcement">بانر إعلاني / إخباري (Announcement)</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width" *ngIf="formBanner.type === 'coupon'">
+              <label>اختر كوبون الخصم المرتبط <span class="req">*</span></label>
+              <select [(ngModel)]="formBanner.coupon_id" class="input-custom">
+                <option *ngFor="let coup of couponsList" [value]="coup.id">
+                  كود {{ coup.code }} (خصم {{ coup.value }}{{ coup.discount_type === 'percentage' ? '%' : ' ج.م' }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label>عنوان البانر الرئيسي <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="formBanner.title" placeholder="مثال: مهرجان العناية الفاخرة — خصم 10%" class="input-custom" />
+            </div>
+
+            <div class="form-group full-width">
+              <label>العنوان الفرعي / الوصف الترويجي</label>
+              <textarea rows="2" [(ngModel)]="formBanner.subtitle" placeholder="اكتبي تفاصيل العرض الترويجي..." class="input-custom"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label>رابط صورة البانر (1600×600px مقترح) <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="formBanner.image_storage_path" placeholder="https://images.unsplash.com/..." class="input-custom" dir="ltr" />
+            </div>
+
+            <div class="form-group">
+              <label>نص زر التوجيه (CTA Text)</label>
+              <input type="text" [(ngModel)]="formBanner.cta_text" placeholder="مثال: تسوقي بالخصم الآن" class="input-custom" />
+            </div>
+
+            <div class="form-group">
+              <label>رابط التوجيه (CTA Link)</label>
+              <input type="text" [(ngModel)]="formBanner.cta_link" placeholder="مثال: /products أو /booking/request" class="input-custom" dir="ltr" />
+            </div>
+
+            <div class="form-group">
+              <label>ترتيب العرض (Sort Order)</label>
+              <input type="number" [(ngModel)]="formBanner.sort_order" class="input-custom" />
+            </div>
+
+            <div class="form-group">
+              <label>الحالة</label>
+              <select [(ngModel)]="formBanner.is_active" class="input-custom">
+                <option [ngValue]="true">مفعّل ويظهر في السلايدر</option>
+                <option [ngValue]="false">معطّل ومخفي مؤقتاً</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button (click)="closeBannerModal()" class="btn-outline">إلغاء</button>
+          <button (click)="saveBanner()" [disabled]="!formBanner.title || !formBanner.image_storage_path" class="btn-primary">
+            حفظ البانر
+          </button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -534,11 +687,18 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
       flex-wrap: wrap;
       gap: 1.5rem;
     }
+    .admin-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
     .admin-title {
       font-size: 2.2rem;
       font-weight: 800;
       color: var(--color-text-main);
       margin-top: 0.35rem;
+
+      @media (max-width: 600px) { font-size: 1.7rem; }
     }
     .metrics-grid {
       display: grid;
@@ -615,6 +775,32 @@ import { MOCK_COUPONS } from '../../core/mock/mock-data';
     .mt-4 { margin-top: 2rem; }
     .mb-4 { margin-bottom: 2rem; }
     .sub-table-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+    .banner-thumb {
+      width: 100px;
+      height: 56px;
+      border-radius: 10px;
+      object-fit: cover;
+      box-shadow: var(--shadow-sm);
+    }
+    .toggle-active-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #9CA3AF;
+      transition: var(--transition-smooth);
+
+      i { font-size: 1.2rem; }
+      &.active {
+        color: #10B981;
+      }
+    }
 
     .audit-alert-box {
       display: flex; align-items: center; gap: 1rem; background: #FFFBEB; border: 1px solid #FDE68A; padding: 1rem 1.25rem; border-radius: 14px; color: #92400E; margin-bottom: 1.5rem;
@@ -735,18 +921,35 @@ export class AdminComponent {
   providersService = inject(ProvidersService);
   centersService = inject(CentersService);
   referralsService = inject(ReferralsService);
+  bannersService = inject(BannersService);
   auth = inject(AuthService);
 
-  activeTab: 'centers_referrals' | 'matching' | 'providers' | 'products' | 'orders' | 'coupons' = 'centers_referrals';
+  activeTab: 'banners' | 'centers_referrals' | 'matching' | 'providers' | 'products' | 'orders' | 'coupons' = 'banners';
   productSearch: string = '';
   couponsList: Coupon[] = MOCK_COUPONS;
 
   selectedProviderId: Record<string, string> = {};
   offerPrices: Record<string, number> = {};
 
+  // Product Modal State
   isModalOpen: boolean = false;
   editingProduct: Product | null = null;
   formProduct: Partial<Product> = { name: '', price: 0, stock_quantity: 10, main_image: '' };
+
+  // Banner Modal State (Phase 4)
+  isBannerModalOpen: boolean = false;
+  editingBanner: Banner | null = null;
+  formBanner: Partial<Banner> = {
+    title: '',
+    subtitle: '',
+    type: 'coupon',
+    coupon_id: MOCK_COUPONS[0]?.id,
+    image_storage_path: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1600&q=80',
+    cta_text: 'تسوقي بالخصم الآن',
+    cta_link: '/products',
+    sort_order: 1,
+    is_active: true
+  };
 
   getTotalSales(): number {
     return this.ordersService.orders().reduce((sum, o) => sum + o.total_price, 0);
@@ -870,6 +1073,50 @@ export class AdminComponent {
   async deleteProduct(id: string): Promise<void> {
     if (confirm('هل أنتِ متأكدة من حذف هذا المنتج؟')) {
       await this.productsService.deleteProduct(id);
+    }
+  }
+
+  // Phase 4: Banners Management Methods
+  openNewBannerModal(): void {
+    this.editingBanner = null;
+    this.formBanner = {
+      title: '',
+      subtitle: '',
+      type: 'coupon',
+      coupon_id: this.couponsList[0]?.id,
+      image_storage_path: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1600&q=80',
+      cta_text: 'تسوقي بالخصم الآن',
+      cta_link: '/products',
+      sort_order: this.bannersService.banners().length + 1,
+      is_active: true
+    };
+    this.isBannerModalOpen = true;
+  }
+
+  openEditBannerModal(banner: Banner): void {
+    this.editingBanner = banner;
+    this.formBanner = { ...banner };
+    this.isBannerModalOpen = true;
+  }
+
+  closeBannerModal(): void {
+    this.isBannerModalOpen = false;
+  }
+
+  async saveBanner(): Promise<void> {
+    if (!this.formBanner.title || !this.formBanner.image_storage_path) return;
+
+    if (this.editingBanner) {
+      await this.bannersService.updateBanner(this.editingBanner.id, this.formBanner);
+    } else {
+      await this.bannersService.createBanner(this.formBanner);
+    }
+    this.closeBannerModal();
+  }
+
+  async deleteBanner(id: string): Promise<void> {
+    if (confirm('هل أنتِ متأكدة من حذف هذا البانر الترويجي؟')) {
+      await this.bannersService.deleteBanner(id);
     }
   }
 }

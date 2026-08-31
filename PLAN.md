@@ -1,4 +1,4 @@
-# 📋 خطة تنفيذ ومتابعة مشروع منصة العناية بالشعر والبشرة (Store + Home Sessions + Centers Directory)
+# 📋 خطة تنفيذ ومتابعة مشروع منصة العناية بالشعر والبشرة (Store + Home Sessions + Centers + Banners + Mobile)
 
 > **الحالة العامة**: 🚀 قيد التشغيل والتطوير المستمر  
 > **الستاك**: Angular 22 (Standalone + Signals) + Supabase (PostgreSQL, Auth, RLS, Storage)  
@@ -6,6 +6,7 @@
 > 1. 🟢 المرحلة الأولى: المتجر الإلكتروني لمنتجات العناية الأصلية
 > 2. 🟢 المرحلة الثانية: سوق الجلسات المنزلية والفريلانسرز (On-demand Home Care)
 > 3. 🟢 المرحلة الثالثة: دليل المراكز الشريكة وتتبع أكواد الإحالة والخصم (Beauty Centers Directory & Referral Tracking)
+> 4. 🟢 المرحلة الرابعة: البانرات الترويجية وتجاوب الجوال المتكامل (Promotional Banners & Mobile Drawer)
 
 ---
 
@@ -23,11 +24,17 @@
    - بوابة الأخصائيات والفريلانسرز (`/provider`) لإدارة الجلسات والأرباح واحتساب عمولة المنصة (15%).
 
 3. **دليل المراكز الشريكة ونظام تتبع الإحالات (Beauty Centers Directory - Phase 3)**:
-   - **دليل المراكز (`/centers`)**: استعراض الصالونات والسبا المعتمدة بالقرب من العميلة (التجمع، المعادي، الشيخ زايد، بني سويف) مع فلاتر الخدمات وساعات العمل.
+   - **دليل المراكز (`/centers`)**: استعراض الصالونات والسبا المعتمدة بالقرب من العميلة مع فلاتر الخدمات وساعات العمل.
    - **بروفايل المركز وقائمة الخدمات (`/centers/:id`)**: معرض الصور، تفاصيل الخدمات ونطاقات الأسعار، وزر الحصول على كود الخصم الحصري (e.g. `LETOILE15`).
    - **صفحة أكوادي وإحالاتي (`/centers/my-codes`)**: استعراض الأكواد الصادرة للعميلة وإبرازها للمركز.
    - **بوابة المركز الشريك (`/center`)**: تأكيد/رفض استخدام الكود وإدخال قيمة الخدمة لاحتساب عمولة المنصة آلياً عبر الـ Trigger، وإدارة الخدمات والأسعار.
    - **لوحة تحكم الإدارة (`/admin`)**: متابعة وتدقيق الإحالات المعلقة (`claimed`) وعمولات المنصة والتسويات المالية.
+
+4. **البانرات الترويجية وقائمة الموبايل المتجاوبة (Phase 4 - Banners & Mobile Responsive)**:
+   - **سلايدر البانرات في الصفحة الرئيسية (`homepage-banners`)**: كاروسيل أوتوماتيكي متجاوب بنوعين (كوبونات خصم تتيح النسخ والتطبيق الفوري + إعلانات وفعاليات موجهة).
+   - **قائمة الموبايل الجانبية الفاخرة (Mobile Navigation Drawer)**: زر هامبرغر متجاوب يفتح قائمة جانبية منزلقة تضم بروفايل المستخدم، رصيد نقاط الولاء، بحث الجوال السريع، روابط كافة الخدمات، ومحول الأدوار السريع.
+   - **إدارة البانرات في لوحة الأدمن (`/admin`)**: استعراض البانرات، زر تفعيل/تعطيل لحظي، ومودال إضافة وتعديل البانر وربطه بالكوبونات وتحديد فترة سريانه.
+   - **قاعدة البيانات (`supabase/schema.sql`)**: جدول `banners`، View `active_banners`، وسياسات الأمان RLS.
 
 ---
 
@@ -44,26 +51,29 @@
 - [x] إعداد ملفات البيئة `environment.ts` و `environment.development.ts`.
 - [x] إنشاء `SupabaseService` كـ Client رئيسي مع fallback آمن للتطوير.
 - [x] إنشاء `AuthService` مع إدارة الحالة عبر Signals ومفتاح التبديل الرباعي السريع (عميلة / أخصائية / مركز شريك / أدمن).
-- [x] إنشاء الـ Models والـ Types لجميع الكيانات (Store + Phase 2 Bookings + Phase 3 Centers & Referrals).
+- [x] إنشاء الـ Models والـ Types لجميع الكيانات (Store + Phase 2 Bookings + Phase 3 Centers & Referrals + Phase 4 Banners).
 - [x] إنشاء الـ Guards (`authGuard`, `adminGuard`).
-- [x] إنشاء الـ Mock Data الغنية للمنتجات والجلسات والمراكز والأخصائيات المعتمدات في مصر.
+- [x] إنشاء الـ Mock Data الغنية للمنتجات والجلسات والمراكز والبانرات الترويجية.
 
 ### 🟢 المرحلة 3: نظام التصميم والمكونات المشتركة (Design System & UI Components)
 - [x] ضبط نظام الألوان (Rose gold / Warm neutrals / Emerald accents / Dark-Light theme).
 - [x] خطوط عربية فاخرة (Cairo / Plus Jakarta Sans) ودعم RTL كامل.
 - [x] مكونات UI المشتركة (Navbar, Footer, ProductCard, CartDrawer).
+- [x] قائمة الموبايل المنزلقة (Mobile Drawer) وزر الهامبرغر المتجاوب.
 
 ### 🟢 المرحلة 4: خدمات المتجر وإدارة الحالة (Store Services with Signals)
-- [x] `ProductsService`, `CartService`, `CouponsService`, `OrdersService`.
+- [x] `ProductsService`, `CartService`, `CouponsService`, `OrdersService`, `BannersService`.
 
 ### 🟢 المرحلة 5: صفحات المتجر للعملاء (Customer Storefront Pages)
 - [x] **HomeComponent**, **CatalogComponent**, **ProductDetailsComponent**, **CheckoutComponent**.
+- [x] **HomepageBannersComponent** مدمج في الصفحة الرئيسية.
 
 ### 🟢 المرحلة 6: لوحة تحكم الإدارة المركزية (Admin Dashboard)
 - [x] لوحة الإحصائيات (Overview Analytics): مبيعات المتجر، طلبات الجلسات، المراكز الشريكة، عمولات المنصة.
 - [x] إدارة المنتجات، الطلبات، والكوبونات.
 - [x] طابور الترشيح والمطابقة الذكية للجلسات المنزلية.
 - [x] شاشة متابعة وتدقيق إحالات المراكز وتنبيهات التدقيق (Audit Alerts) وتسجيل التحصيل.
+- [x] شاشة إدارة البانرات الترويجية وتفعيلها/تعطيلها وإضافتها.
 
 ### 🟢 المرحلة 7: حساب العميل وتاريخ الطلبات ونقاط الولاء
 - [x] الملف الشخصي، تتبع الطلبات، ومحفظة نقاط الولاء.
@@ -74,17 +84,16 @@
 - [x] بوابة الأخصائيات والفريلانسرز ومتابعة الأرباح (`/provider`).
 
 ### 🟢 المرحلة 9: دليل المراكز الشريكة وبوابة المركز وتتبع الإحالات (Phase 3 - Centers Directory)
-- [x] **دليل المراكز والبحث الجغرافي (`/centers`)**: فلاتر المحافظات ونوع العناية والبحث اللحظي.
-- [x] **بروفايل المركز الشريك (`/centers/:id`)**: معرض الصور، قائمة الخدمات والأسعار، واستخراج كود الخصم.
-- [x] **صفحة أكوادي وإحالاتي (`/centers/my-codes`)**: استعراض الأكواد الصادرة للعميلة ومشاركتها مع المركز.
-- [x] **بوابة المركز الشريك (`/center`)**:
-  - تأكيد استخدام الكود وإدخال قيمة الفاتورة أو الرفض.
-  - إدارة الخدمات وقوائم الأسعار التقديرية.
-  - كشف حساب العمولات وسجل التحويلات المالية.
-- [x] **قاعدة البيانات (`supabase/schema.sql`)**:
-  - جداول `center_services`, `referral_codes`, `referral_redemptions`.
-  - تريجر `calculate_referral_commission` لحساب العمولة آلياً عند التأكيد.
-  - سياسات RLS الكاملة.
+- [x] دليل المراكز والبحث الجغرافي (`/centers`).
+- [x] بروفايل المركز الشريك (`/centers/:id`).
+- [x] صفحة أكوادي وإحالاتي (`/centers/my-codes`).
+- [x] بوابة المركز الشريك (`/center`).
+
+### 🟢 المرحلة 10: البانرات الترويجية والريسبونسيف المتكامل (Phase 4 - Banners & Mobile)
+- [x] جدول `banners` والـ View `active_banners` في قاعدة البيانات.
+- [x] مكون سلايدر البانرات الترويجي الذكي في الصفحة الرئيسية.
+- [x] ناف بار متجاوب 100% مع قائمة منزلقة فاخرة للموبايل والتابلت.
+- [x] تبويب إدارة البانرات في لوحة الأدمن.
 
 ---
 
@@ -92,4 +101,5 @@
 - `fe88cb5`: `feat: initial store setup with Angular 22 standalone, Supabase integration, luxury UI and admin dashboard`
 - `b916fba`: `docs: update PLAN.md with completed store MVP milestones and budget optimization`
 - `f360f67`: `feat(phase2): implement home care sessions marketplace, specialist portal, matching queue, and booking lifecycle`
-- `feat(phase3): implement partner beauty centers directory, referral discount codes, center portal and commission tracking`
+- `82b210f`: `feat(phase3): implement partner beauty centers directory, referral discount codes, center portal and commission tracking`
+- `feat(banners-mobile): implement promotional banners carousel, admin management, and responsive mobile drawer`

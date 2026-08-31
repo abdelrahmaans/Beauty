@@ -4,13 +4,17 @@ import { RouterModule } from '@angular/router';
 import { ProductsService } from '../../../core/services/products.service';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 import { CartService } from '../../../core/services/cart.service';
+import { HomepageBannersComponent } from '../../home/homepage-banners/homepage-banners.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ProductCardComponent],
+  imports: [CommonModule, RouterModule, ProductCardComponent, HomepageBannersComponent],
   template: `
     <div class="home-page">
+      <!-- Promotional Banners Slider (Phase 4) -->
+      <app-homepage-banners></app-homepage-banners>
+
       <!-- Hero Section -->
       <section class="hero-section">
         <div class="container-custom hero-container">

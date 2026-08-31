@@ -20,6 +20,59 @@ create type payout_status as enum ('pending', 'paid');
 create type points_source as enum ('order', 'booking', 'redemption', 'manual');
 
 -- =============================================================================
+-- 5. PHASE 4 TABLES (PROMOTIONAL BANNERS)
+-- =============================================================================
+
+create type banner_type as enum ('coupon', 'announcement');
+create type banner_placement as enum ('homepage');
+
+create table if not exists banners (
+  id uuid primary key default gen_random_uuid(),
+  type banner_type not null,
+  placement banner_placement not null default 'homepage',
+  title text not null,
+  subtitle text,
+  image_storage_path text not null,
+  cta_text text,
+  cta_link text,
+  coupon_id uuid references coupons(id),
+  is_active boolean not null default true,
+  start_at timestamptz,
+  end_at timestamptz,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint coupon_required_for_coupon_type
+    check (type != 'coupon' or coupon_id is not null)
+);
+
+create index if not exists idx_banners_active_homepage
+  on banners (placement, is_active, sort_order)
+  where is_active = true;
+
+alter table banners enable row level security;
+
+drop policy if exists "read active banners" on banners;
+create policy "read active banners" on banners
+  for select using (true);
+
+drop policy if exists "admin manages banners" on banners;
+create policy "admin manages banners" on banners
+  for all using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
+
+-- View: currently active banners for public display
+create or replace view active_banners as
+select *
+from banners
+where is_active = true
+  and (start_at is null or start_at <= now())
+  and (end_at is null or end_at >= now())
+order by sort_order asc;
+
+-- =============================================================================
 -- 2. CORE TABLES (PHASE 1 - STORE)
 -- =============================================================================
 

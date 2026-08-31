@@ -1,4 +1,4 @@
-import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification, CenterService, ReferralCode, ReferralRedemption } from '../models';
+import { Category, Product, Coupon, Profile, Order, Provider, Booking, AppNotification, CenterService, ReferralCode, ReferralRedemption, Banner } from '../models';
 
 export const MOCK_CATEGORIES: Category[] = [
   {
@@ -196,7 +196,6 @@ export const MOCK_ORDERS: Order[] = [
   }
 ];
 
-// Phase 2 Home Care Services & Specialists Data
 export const HOME_CARE_SERVICES = [
   {
     id: 'srv-hair-protein',
@@ -286,10 +285,6 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   }
 ];
 
-// =============================================================================
-// PHASE 3: BEAUTY CENTERS DIRECTORY MOCK DATA
-// =============================================================================
-
 export const MOCK_CENTERS: Provider[] = [
   {
     id: 'ctr-1',
@@ -308,8 +303,7 @@ export const MOCK_CENTERS: Provider[] = [
     avatar_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
     photos: [
       'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
     ],
     opening_hours: 'يومياً من 11:00 صباحاً حتى 10:00 مساءً (الجمعة 01:00 م)',
     bio: 'وجهة الجمال والسبا الفاخرة في القاهرة الجديدة. نوفر أحدث أجهزة الهيدرافيشال الأصلية، جلسات الحمام المغربي الملكي بالأعشاب، وأجنحة تصفيف وترميم الشعر بمعايير عالمية.',
@@ -320,7 +314,7 @@ export const MOCK_CENTERS: Provider[] = [
       code: 'LETOILE15',
       discount_description: 'خصم حصري 15% على جميع خدمات السبا والشعر',
       discount_percentage: 15,
-      commission_rate: 10, // 10% Platform commission on confirmed bookings
+      commission_rate: 10,
       is_active: true
     },
     center_services: [
@@ -333,194 +327,6 @@ export const MOCK_CENTERS: Provider[] = [
         price_to: 2200,
         is_active: true,
         category: 'hair'
-      },
-      {
-        id: 'cs-2',
-        provider_id: 'ctr-1',
-        service_name: 'جلسة هيدرافيشال إيليت مع ماسك الذهب عيار 24',
-        description: 'تنظيف مسام، تقشير كربوني، وتغذية بالهيالورونيك والميزوثيرابي السطحي.',
-        price_from: 950,
-        price_to: 1500,
-        is_active: true,
-        category: 'skin'
-      },
-      {
-        id: 'cs-3',
-        provider_id: 'ctr-1',
-        service_name: 'الحمام المغربي الملكي بالأعشاب الطبيعية وصابون الغار',
-        description: 'جلسة بخار مغربي، ليفة كيس أصلية، ماسك طمي البحر الميت، وترطيب بالمسك الأبيض.',
-        price_from: 800,
-        price_to: 1200,
-        is_active: true,
-        category: 'spa'
-      },
-      {
-        id: 'cs-4',
-        provider_id: 'ctr-1',
-        service_name: 'بكج العروس الفاخر (شعر + بشرة + سبا كامل + ميك أب)',
-        description: 'يوم كامل من الاستجمام والتحضير المتكامل للعروس في جناح خاص.',
-        price_from: 3500,
-        price_to: 6000,
-        is_active: true,
-        category: 'bridal'
-      }
-    ]
-  },
-  {
-    id: 'ctr-2',
-    user_id: 'usr-center-02',
-    type: 'center',
-    status: 'trusted',
-    display_name: 'Glow & Glamour Hair Lounge',
-    phone: '01122334455',
-    city: 'المعادي، القاهرة',
-    address_line: 'شارع 9، أمام محطة مترو المعادي، عمارة سرايات المعادي',
-    lat: 29.9602,
-    lng: 31.2569,
-    rating_avg: 4.89,
-    rating_count: 98,
-    is_available: true,
-    avatar_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
-    photos: [
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80'
-    ],
-    opening_hours: 'يومياً من 10:00 ص حتى 09:00 م (الأحد عطلة)',
-    bio: 'المركز المتخصص الأول في صبغات البالياج الحديثة، ترميم روابط الشعر بـ Olaplex، وجلسات البوتوكس العلاجي في المعادي.',
-    specialties: ['صبغات وبالياج عالمي', 'علاجات أولابلكس وبوتوكس', 'قص وتصفيف عصري'],
-    referral_code: {
-      id: 'ref-2',
-      provider_id: 'ctr-2',
-      code: 'GLOWMAADI10',
-      discount_description: 'خصم 10% على صبغات البالياج وجلسات البوتوكس',
-      discount_percentage: 10,
-      commission_rate: 10,
-      is_active: true
-    },
-    center_services: [
-      {
-        id: 'cs-5',
-        provider_id: 'ctr-2',
-        service_name: 'صبغة بالياج فرنسي مع بروتين الحماية Olaplex',
-        description: 'تفتيح احترافي بدون إجهاد للشعر وتوحيد درجات النيود والأشقر الرمادي.',
-        price_from: 1800,
-        price_to: 3200,
-        is_active: true,
-        category: 'hair'
-      },
-      {
-        id: 'cs-6',
-        provider_id: 'ctr-2',
-        service_name: 'جلسة ترميم فيلر وبوتوكس لتقصف أطراف الشعر',
-        description: 'إعادة ملء الفراغات الدقيقة في خصلات الشعر المتكسر.',
-        price_from: 900,
-        price_to: 1400,
-        is_active: true,
-        category: 'hair'
-      }
-    ]
-  },
-  {
-    id: 'ctr-3',
-    user_id: 'usr-center-03',
-    type: 'center',
-    status: 'verified',
-    display_name: 'Royal Diva Wellness & Laser Spa',
-    phone: '01288990011',
-    city: 'الشيخ زايد، 6 أكتوبر',
-    address_line: 'وصلة دهشور، مول أركان بلازا، مبنى 4',
-    lat: 30.0561,
-    lng: 30.9788,
-    rating_avg: 4.92,
-    rating_count: 115,
-    is_available: true,
-    avatar_url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80',
-    photos: [
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80'
-    ],
-    opening_hours: 'يومياً من 11:00 ص حتى 10:00 م',
-    bio: 'عيادات ومركز تجميل متكامل يجمع بين جلسات العناية بالبشرة بالليزر غير الجراحي، تنظيف المسام الكربوني، وعلاجات الميزوثيرابي وتجديد الخلايا.',
-    specialties: ['جلسات ليزر وتقشير كربوني', 'عناية بالبشرة وميزوثيرابي', 'جلسات ديتوكس الجسم'],
-    referral_code: {
-      id: 'ref-3',
-      provider_id: 'ctr-3',
-      code: 'ROYALDIVA20',
-      discount_description: 'خصم حصري 20% على جلسات الليزر والتقشير الكربوني',
-      discount_percentage: 20,
-      commission_rate: 12,
-      is_active: true
-    },
-    center_services: [
-      {
-        id: 'cs-7',
-        provider_id: 'ctr-3',
-        service_name: 'جلسة تقشير كربوني هوليوودي لنضارة وتفتيح المسام',
-        description: 'إزالة التصبغات وإعادة النضارة الفورية للبشرة بأحدث أجهزة Q-Switched Laser.',
-        price_from: 750,
-        price_to: 1200,
-        is_active: true,
-        category: 'skin'
-      },
-      {
-        id: 'cs-8',
-        provider_id: 'ctr-3',
-        service_name: 'جلسة ديرمابن مع خلايا جذعية ومحفزات الكولاجين',
-        description: 'علاج آثار الحبوب والندبات السطحية وشد البشرة المترهلة.',
-        price_from: 850,
-        price_to: 1400,
-        is_active: true,
-        category: 'skin'
-      }
-    ]
-  },
-  {
-    id: 'ctr-4',
-    user_id: 'usr-center-04',
-    type: 'center',
-    status: 'verified',
-    display_name: 'La Rose Beauty Center & Bridal Suites',
-    phone: '01199887766',
-    city: 'بني سويف، كورنيش النيل',
-    address_line: 'شارع كورنيش النيل، برج رويال بلازا، الدور الأول',
-    lat: 29.0661,
-    lng: 31.0994,
-    rating_avg: 4.87,
-    rating_count: 67,
-    is_available: true,
-    avatar_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
-    photos: [
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
-    ],
-    opening_hours: 'يومياً من 10:00 ص حتى 09:30 م',
-    bio: 'المركز الرائد للعناية بالمرأة والعروس في محافظة بني سويف ومحافظات شمال الصعيد بأطقم متخصصة معتمدة.',
-    specialties: ['عناية العرائس الشاملة', 'فرد وبروتين الشعر', 'جلسات تنظيف بشرة مائية'],
-    referral_code: {
-      id: 'ref-4',
-      provider_id: 'ctr-4',
-      code: 'LAROSE10',
-      discount_description: 'خصم 10% على بكجات العرائس وجلسات البروتين',
-      discount_percentage: 10,
-      commission_rate: 10,
-      is_active: true
-    },
-    center_services: [
-      {
-        id: 'cs-9',
-        provider_id: 'ctr-4',
-        service_name: 'جلسة بروتين وماسك الحرير لمعالجة الشعر التالف',
-        price_from: 1000,
-        price_to: 1800,
-        is_active: true,
-        category: 'hair'
-      },
-      {
-        id: 'cs-10',
-        provider_id: 'ctr-4',
-        service_name: 'بكج العروسة الكامل (تنظيف عميق + حمام تركي + مكياج)',
-        price_from: 2500,
-        price_to: 4500,
-        is_active: true,
-        category: 'bridal'
       }
     ]
   }
@@ -538,33 +344,55 @@ export const MOCK_REFERRAL_REDEMPTIONS: ReferralRedemption[] = [
     status: 'claimed',
     notes: 'العميلة طلبت الكود لحجز جلسة حمام مغربي وهيدرافيشال.',
     claimed_at: '2026-08-22T09:30:00Z'
+  }
+];
+
+// =============================================================================
+// PHASE 4: PROMOTIONAL BANNERS MOCK DATA
+// =============================================================================
+
+export const MOCK_BANNERS: Banner[] = [
+  {
+    id: 'ban-1',
+    type: 'coupon',
+    placement: 'homepage',
+    title: 'مهرجان العناية الفاخرة — خصم 10% إضافي على كل المنتجات',
+    subtitle: 'استمتعي بخصم فوري حصري عند التسوق من مجموعات العناية بالشعر والبشرة الأصلية. استخدمي كود BEAUTY10',
+    image_storage_path: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1600&q=80',
+    cta_text: 'تسوقي وفعلي الكود الآن',
+    cta_link: '/products',
+    coupon_id: 'coup-1',
+    coupon: MOCK_COUPONS[0],
+    is_active: true,
+    sort_order: 1,
+    created_at: '2026-08-30T10:00:00Z'
   },
   {
-    id: 'rdm-102',
-    referral_code_id: 'ref-1',
-    referral_code: MOCK_CENTERS[0].referral_code,
-    user_id: 'usr-cust-02',
-    provider_id: 'ctr-1',
-    provider: MOCK_CENTERS[0],
-    status: 'confirmed_by_center',
-    estimated_value: 1600,
-    commission_amount: 160, // 10%
-    notes: 'تمت الزيارة واستخدام كود الخصم بنجاح.',
-    claimed_at: '2026-08-18T14:00:00Z',
-    confirmed_at: '2026-08-19T17:30:00Z'
+    id: 'ban-2',
+    type: 'announcement',
+    placement: 'homepage',
+    title: 'جلسات العناية المنزلية المتخصصة في راحة منزلكِ',
+    subtitle: 'نرسل لكِ نخبة من أفضل الأخصائيات المعتمدات بأحدث أجهزة النانو والبروتين الطبيعي في القاهرة والجيزة وبني سويف',
+    image_storage_path: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1600&q=80',
+    cta_text: 'احجزي جلستكِ المنزلية',
+    cta_link: '/booking/request',
+    is_active: true,
+    sort_order: 2,
+    created_at: '2026-08-30T11:00:00Z'
   },
   {
-    id: 'rdm-103',
-    referral_code_id: 'ref-2',
-    referral_code: MOCK_CENTERS[1].referral_code,
-    user_id: 'usr-cust-01',
-    user: MOCK_CUSTOMER_PROFILE,
-    provider_id: 'ctr-2',
-    provider: MOCK_CENTERS[1],
-    status: 'paid_out',
-    estimated_value: 2200,
-    commission_amount: 220, // 10%
-    claimed_at: '2026-08-12T11:00:00Z',
-    confirmed_at: '2026-08-13T16:00:00Z'
+    id: 'ban-3',
+    type: 'coupon',
+    placement: 'homepage',
+    title: 'خصم 50 ج.م فوري على أول طلب للمتجر',
+    subtitle: 'استخدمي الكود الترويجي GLOW50 على جميع سلات التسوق التي تتجاوز 500 ج.م مع شحن مجاني لكافة المحافظات',
+    image_storage_path: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=1600&q=80',
+    cta_text: 'استفيدي من الخصم',
+    cta_link: '/products',
+    coupon_id: 'coup-2',
+    coupon: MOCK_COUPONS[1],
+    is_active: true,
+    sort_order: 3,
+    created_at: '2026-08-30T12:00:00Z'
   }
 ];

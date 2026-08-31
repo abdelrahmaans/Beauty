@@ -10,6 +10,8 @@ export type PayoutStatus = 'pending' | 'paid';
 export type PointsSource = 'order' | 'booking' | 'redemption' | 'manual';
 export type ReportStatus = 'open' | 'in_review' | 'resolved';
 export type RedemptionStatus = 'claimed' | 'confirmed_by_center' | 'rejected' | 'paid_out';
+export type BannerType = 'coupon' | 'announcement';
+export type BannerPlacement = 'homepage';
 
 export interface Profile {
   id: string;
@@ -162,7 +164,7 @@ export interface Provider {
   id: string;
   user_id: string;
   user?: Profile;
-  type: ProviderType; // 'freelancer' | 'center'
+  type: ProviderType;
   status: ProviderStatus;
   display_name: string;
   phone?: string;
@@ -266,7 +268,7 @@ export interface ReferralCode {
   code: string;
   discount_description?: string;
   discount_percentage?: number;
-  commission_rate: number; // e.g. 10 (%)
+  commission_rate: number;
   is_active: boolean;
   created_at?: string;
 }
@@ -279,10 +281,31 @@ export interface ReferralRedemption {
   user?: Profile;
   provider_id: string;
   provider?: Provider;
-  status: RedemptionStatus; // 'claimed' | 'confirmed_by_center' | 'rejected' | 'paid_out'
+  status: RedemptionStatus;
   estimated_value?: number | null;
   commission_amount?: number | null;
   notes?: string;
   claimed_at: string;
   confirmed_at?: string | null;
+}
+
+// Phase 4: Promotional Banners Model
+
+export interface Banner {
+  id: string;
+  type: BannerType; // 'coupon' | 'announcement'
+  placement: BannerPlacement; // 'homepage'
+  title: string;
+  subtitle?: string;
+  image_storage_path: string;
+  cta_text?: string;
+  cta_link?: string;
+  coupon_id?: string | null;
+  coupon?: Coupon;
+  is_active: boolean;
+  start_at?: string | null;
+  end_at?: string | null;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
 }

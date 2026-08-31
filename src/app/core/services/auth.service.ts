@@ -181,7 +181,7 @@ export class AuthService {
     return null;
   }
 
-  // 2. Real Sign In with detailed Arabic error handling
+  // 2. Real Sign In with detailed Arabic error handling and instant UI response
   async signInWithEmail(email: string, password: string): Promise<{ success: boolean; context?: UserDashboardContext; error?: string }> {
     this._isLoading.set(true);
     const client = this.supabase.client;
@@ -189,18 +189,21 @@ export class AuthService {
 
     if (client) {
       try {
-        const { data, error } = await client.auth.signInWithPassword({
-          email: cleanEmail,
-          password
-        });
+        // 10-second timeout safety to avoid perpetual loading
+        const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
+          setTimeout(() => resolve({
+            data: null,
+            error: { message: 'انتهت مهلة الاتصال بقاعدة البيانات، يرجى المحاولة مرة أخرى أو التأكد من سرعة الاتصال بالإنترنت.' }
+          }), 10000)
+        );
+
+        const { data, error } = await Promise.race([
+          client.auth.signInWithPassword({ email: cleanEmail, password }),
+          timeoutPromise
+        ]);
 
         if (error) {
           console.warn('Supabase Auth signIn error:', error);
-
-          // If the user entered the demo credentials and they are not seeded in Supabase auth yet, allow instant demo login
-          if (cleanEmail.includes('@beauty.eg')) {
-            return this.simulateDemoSignIn(cleanEmail);
-          }
 
           let friendlyMsg = error.message;
           if (error.message.includes('Email not confirmed')) {
@@ -215,12 +218,36 @@ export class AuthService {
           return { success: false, error: friendlyMsg };
         }
 
-        if (data.user) {
+        if (data?.user) {
+          // Immediately construct and set profile & context synchronously so UI does not wait
+          const userMeta = data.user.user_metadata || {};
+          const role = (userMeta['role'] as UserRole) || (cleanEmail.includes('admin') ? 'admin' : 'customer');
+          const immediateProfile: Profile = {
+            id: data.user.id,
+            full_name: userMeta['full_name'] || cleanEmail.split('@')[0] || 'عميلة المتجر',
+            phone: userMeta['phone'] || '',
+            role: role,
+            city: userMeta['city'] || 'القاهرة',
+            loyalty_points: 50
+          };
+
           this._currentUser.set(data.user);
-          await this.loadProfile(data.user.id);
-          const ctx = await this.getDashboardContext();
+          this._profile.set(immediateProfile);
+
+          const ctx: UserDashboardContext = {
+            view: role === 'admin' ? 'admin' : (role === 'provider' ? 'provider' : (role === 'center' ? 'center' : 'customer')),
+            status: 'verified'
+          };
+          this._dashboardContext.set(ctx);
+          localStorage.setItem('beauty_active_user', JSON.stringify(immediateProfile));
+          localStorage.setItem('beauty_active_context', JSON.stringify(ctx));
           this._isLoading.set(false);
-          return { success: true, context: ctx || { view: 'customer', status: 'verified' } };
+
+          // Asynchronously sync with Supabase profiles & context in background without blocking UI
+          this.loadProfile(data.user.id);
+          this.getDashboardContext();
+
+          return { success: true, context: ctx };
         }
       } catch (err: any) {
         this._isLoading.set(false);

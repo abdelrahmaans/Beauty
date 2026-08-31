@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { PaymentProofsService } from '../../core/services/payment-proofs.service';
+import { SupabaseService } from '../../core/services/supabase.service';
 import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
 
 @Component({
@@ -483,14 +484,27 @@ export class AccountComponent {
   auth = inject(AuthService);
   ordersService = inject(OrdersService);
   paymentProofsService = inject(PaymentProofsService);
+  private supabase = inject(SupabaseService);
 
   activeTab: 'orders' | 'profile' = 'orders';
 
-  profileName: string = this.auth.profile()?.full_name || '';
-  profilePhone: string = this.auth.profile()?.phone || '';
-  profileCity: string = this.auth.profile()?.city || 'القاهرة';
-  profileAddress: string = this.auth.profile()?.address_line || '';
+  profileName: string = '';
+  profilePhone: string = '';
+  profileCity: string = 'القاهرة';
+  profileAddress: string = '';
   isSaved: boolean = false;
+
+  constructor() {
+    effect(() => {
+      const p = this.auth.profile();
+      if (p) {
+        this.profileName = p.full_name || '';
+        this.profilePhone = p.phone || '';
+        this.profileCity = p.city || 'القاهرة';
+        this.profileAddress = p.address_line || '';
+      }
+    });
+  }
 
   getStatusArabic(status: OrderStatus): string {
     const map: Record<OrderStatus, string> = {
@@ -521,13 +535,25 @@ export class AccountComponent {
     return map[method] || method;
   }
 
-  saveProfile(): void {
-    this.auth.updateProfileData({
+  async saveProfile(): Promise<void> {
+    const updated = {
       full_name: this.profileName,
       phone: this.profilePhone,
       city: this.profileCity,
       address_line: this.profileAddress
-    });
+    };
+    this.auth.updateProfileData(updated);
+
+    const client = this.supabase.client;
+    const userId = this.auth.currentUser()?.id || this.auth.profile()?.id;
+    if (client && userId) {
+      try {
+        await client.from('profiles').upsert([{ id: userId, ...updated }]);
+      } catch (err) {
+        console.warn('Error updating profile in Supabase:', err);
+      }
+    }
+
     this.isSaved = true;
     setTimeout(() => (this.isSaved = false), 3000);
   }

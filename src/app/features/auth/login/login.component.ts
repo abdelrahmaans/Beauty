@@ -77,25 +77,6 @@ import { AuthService } from '../../../core/services/auth.service';
             </button>
           </form>
 
-          <!-- Fast Demo Quick Fill Tabs (Helpful for rapid testing) -->
-          <div class="quick-demo-box">
-            <span class="demo-title"><i class="fa-solid fa-key"></i> تجربة سريعة بحسابات الاختبار:</span>
-            <div class="demo-buttons-grid">
-              <button type="button" class="btn-demo-pill" (click)="fillCredentials('customer@beauty.eg', '123456')">
-                <i class="fa-solid fa-bag-shopping"></i> عميلة
-              </button>
-              <button type="button" class="btn-demo-pill" (click)="fillCredentials('omneya.provider@beauty.eg', '123456')">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> أخصائية
-              </button>
-              <button type="button" class="btn-demo-pill" (click)="fillCredentials('letoile.center@beauty.eg', '123456')">
-                <i class="fa-solid fa-store"></i> مركز شريك
-              </button>
-              <button type="button" class="btn-demo-pill" (click)="fillCredentials('admin@beauty.eg', '123456')">
-                <i class="fa-solid fa-shield-halved"></i> الإدارة
-              </button>
-            </div>
-          </div>
-
           <!-- Footer Links -->
           <div class="auth-footer">
             <p>ليس لديكِ حساب بعد؟ <a routerLink="/signup" class="highlight-link">إنشاء حساب عميلة جديد</a></p>
@@ -216,47 +197,6 @@ import { AuthService } from '../../../core/services/auth.service';
       font-weight: 700;
       margin-top: 0.5rem;
     }
-    .quick-demo-box {
-      margin-top: 2rem;
-      padding: 1.15rem;
-      background: #FAF7F5;
-      border: 1px dashed var(--color-border);
-      border-radius: 16px;
-      text-align: center;
-    }
-    .demo-title {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--color-text-muted);
-      display: block;
-      margin-bottom: 0.75rem;
-    }
-    .demo-buttons-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
-    }
-    .btn-demo-pill {
-      border: 1px solid var(--color-border);
-      background: #FFFFFF;
-      padding: 0.45rem 0.6rem;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--color-text-main);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      transition: var(--transition-smooth);
-      &:hover {
-        border-color: var(--color-primary);
-        color: var(--color-primary);
-        background: var(--color-primary-subtle);
-      }
-    }
     .auth-footer {
       margin-top: 2rem;
       text-align: center;
@@ -321,12 +261,6 @@ export class LoginComponent {
   isLoading: boolean = false;
   errorMessage: string = '';
   returnUrl: string | null = this.route.snapshot.queryParams['returnUrl'] || null;
-
-  fillCredentials(email: string, pass: string): void {
-    this.email = email;
-    this.password = pass;
-    this.errorMessage = '';
-  }
 
   async onSubmit(): Promise<void> {
     if (!this.email || !this.password) return;

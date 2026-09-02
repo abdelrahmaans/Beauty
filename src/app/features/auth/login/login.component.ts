@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -26,9 +26,14 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
 
           <!-- Error Alert -->
-          <div class="error-alert" *ngIf="errorMessage">
+          <div class="error-alert" *ngIf="errorMessage()">
             <i class="fa-solid fa-circle-exclamation"></i>
-            <span>{{ errorMessage }}</span>
+            <div>
+              <strong>{{ errorMessage() }}</strong>
+              <div *ngIf="errorMessage().includes('تأكيده')" class="mt-2 text-xs" style="line-height: 1.5; opacity: 0.95;">
+                💡 <strong>حل سريع لتخطي هذه الخطوة:</strong> ادخلي على Supabase Dashboard ➔ Authentication ➔ Providers ➔ Email وقومي بتعطيل (Confirm email) لحفظ الدخول المباشر فوراً، أو من قائمة Users اضغطي على (...) بجانب إيميلك واختاري Auto Confirm User.
+              </div>
+            </div>
           </div>
 
           <!-- Login Form -->
@@ -57,7 +62,7 @@ import { AuthService } from '../../../core/services/auth.service';
               <div class="input-with-icon">
                 <i class="fa-solid fa-lock icon"></i>
                 <input
-                  [type]="showPassword ? 'text' : 'password'"
+                  [type]="showPassword() ? 'text' : 'password'"
                   [(ngModel)]="password"
                   name="password"
                   required
@@ -65,15 +70,15 @@ import { AuthService } from '../../../core/services/auth.service';
                   class="input-custom"
                   dir="ltr"
                 />
-                <button type="button" class="eye-toggle-btn" (click)="showPassword = !showPassword">
-                  <i class="fa-solid" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                <button type="button" class="eye-toggle-btn" (click)="showPassword.set(!showPassword())">
+                  <i class="fa-solid" [ngClass]="showPassword() ? 'fa-eye-slash' : 'fa-eye'"></i>
                 </button>
               </div>
             </div>
 
-            <button type="submit" [disabled]="isLoading || !email || !password" class="btn-primary btn-block">
-              <span *ngIf="!isLoading">دخول إلى الحساب</span>
-              <span *ngIf="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...</span>
+            <button type="submit" [disabled]="isLoading() || !email || !password" class="btn-primary btn-block">
+              <span *ngIf="!isLoading()">دخول إلى الحساب</span>
+              <span *ngIf="isLoading()"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...</span>
             </button>
           </form>
 
@@ -254,24 +259,27 @@ export class LoginComponent {
   auth = inject(AuthService);
   router = inject(Router);
   route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
 
   email: string = '';
   password: string = '';
-  showPassword: boolean = false;
-  isLoading: boolean = false;
-  errorMessage: string = '';
+  showPassword = signal<boolean>(false);
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string>('');
   returnUrl: string | null = this.route.snapshot.queryParams['returnUrl'] || null;
 
   async onSubmit(): Promise<void> {
     if (!this.email || !this.password) return;
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.cdr.markForCheck();
 
     try {
       const res = await this.auth.signInWithEmail(this.email.trim(), this.password);
 
       if (!res.success) {
-        this.errorMessage = res.error || 'فشل في تسجيل الدخول';
+        this.errorMessage.set(res.error || 'فشل في تسجيل الدخول');
+        this.cdr.markForCheck();
         return;
       }
 
@@ -309,9 +317,10 @@ export class LoginComponent {
       }
     } catch (err: any) {
       console.error('Login submit error:', err);
-      this.errorMessage = err.message || 'حدث خطأ غير متوقع أثناء تسجيل الدخول';
+      this.errorMessage.set(err.message || 'حدث خطأ غير متوقع أثناء تسجيل الدخول');
     } finally {
-      this.isLoading = false;
+      this.isLoading.set(false);
+      this.cdr.markForCheck();
     }
   }
 }

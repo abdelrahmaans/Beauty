@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -14,15 +14,15 @@ import { AuthService } from '../../../core/services/auth.service';
         <div class="auth-card beauty-card animate-fade-in">
           <!-- Header -->
           <div class="auth-header">
-            <span class="badge-luxury">بوابة انضمام الشركاء المستقلين</span>
-            <h1 class="auth-title">انضمي كنخبة أخصائيات العناية</h1>
-            <p class="auth-subtitle">استقبلي طلبات الجلسات المنزلية الفاخرة وحققي دخلاً مميزاً مع تغطية تسويقية وضمان كامل لأتعابكِ.</p>
+            <span class="badge-luxury">بوابة الانضمام للشركاء</span>
+            <h1 class="auth-title">تسجيل أخصائية جديدة</h1>
+            <p class="auth-subtitle">ابدأي بتقديم خدماتكِ المنزلية للعميلات وزودي دخلكِ معنا</p>
           </div>
 
           <!-- Error Alert -->
-          <div class="error-alert" *ngIf="errorMessage">
+          <div class="error-alert" *ngIf="errorMessage()">
             <i class="fa-solid fa-circle-exclamation"></i>
-            <span>{{ errorMessage }}</span>
+            <span>{{ errorMessage() }}</span>
           </div>
 
           <!-- Form -->
@@ -124,9 +124,9 @@ import { AuthService } from '../../../core/services/auth.service';
               <span>بتقديمكِ للطلب، سيتم مراجعة بياناتكِ وتوثيق مستنداتكِ من فريق العمل في غضون 24 ساعة، وستتلقين إشعاراً فور التفعيل.</span>
             </div>
 
-            <button type="submit" [disabled]="isLoading || !fullName || !email || !password || !phone || selectedSpecialties.length === 0" class="btn-primary btn-block">
-              <span *ngIf="!isLoading">إرسال طلب الانضمام كأخصائية</span>
-              <span *ngIf="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> جاري تسجيل الطلب...</span>
+            <button type="submit" [disabled]="isLoading() || !fullName || !email || !password || !phone || selectedSpecialties.length === 0" class="btn-primary btn-block">
+              <span *ngIf="!isLoading()">إرسال طلب الانضمام كأخصائية</span>
+              <span *ngIf="isLoading()"><i class="fa-solid fa-spinner fa-spin"></i> جاري تسجيل الطلب...</span>
             </button>
           </form>
 
@@ -269,6 +269,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class ApplyProviderComponent {
   auth = inject(AuthService);
   router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   fullName: string = '';
   phone: string = '';
@@ -277,8 +278,8 @@ export class ApplyProviderComponent {
   city: string = 'القاهرة (التجمع والمعادي ومدينة نصر)';
   bio: string = '';
   selectedSpecialties: string[] = ['فرد وترميم بروتين'];
-  isLoading: boolean = false;
-  errorMessage: string = '';
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string>('');
 
   availableSpecialties: string[] = [
     'فرد وترميم بروتين',
@@ -298,8 +299,9 @@ export class ApplyProviderComponent {
 
   async onSubmit(): Promise<void> {
     if (!this.fullName || !this.email || !this.password || !this.phone || this.selectedSpecialties.length === 0) return;
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.cdr.markForCheck();
 
     try {
       const res = await this.auth.applyAsProvider({
@@ -313,7 +315,8 @@ export class ApplyProviderComponent {
       });
 
       if (!res.success) {
-        this.errorMessage = res.error || 'حدث خطأ أثناء تقديم الطلب';
+        this.errorMessage.set(res.error || 'حدث خطأ أثناء تقديم الطلب');
+        this.cdr.markForCheck();
         return;
       }
 
@@ -321,9 +324,10 @@ export class ApplyProviderComponent {
       this.router.navigate(['/pending-review']);
     } catch (err: any) {
       console.error('Provider apply submit error:', err);
-      this.errorMessage = err.message || 'حدث خطأ أثناء تقديم الطلب';
+      this.errorMessage.set(err.message || 'حدث خطأ أثناء تقديم الطلب');
     } finally {
-      this.isLoading = false;
+      this.isLoading.set(false);
+      this.cdr.markForCheck();
     }
   }
 }

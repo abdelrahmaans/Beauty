@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +20,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
 
           <!-- Confirmation Notice if Email Confirmation is required -->
-          <div class="confirmation-box animate-fade-in" *ngIf="showConfirmationNotice">
+          <div class="confirmation-box animate-fade-in" *ngIf="showConfirmationNotice()">
             <div class="conf-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
             <h3>تم إنشاء حسابكِ بنجاح!</h3>
             <p>
@@ -35,13 +35,13 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
 
           <!-- Error Alert -->
-          <div class="error-alert" *ngIf="errorMessage">
+          <div class="error-alert" *ngIf="errorMessage()">
             <i class="fa-solid fa-circle-exclamation"></i>
-            <span>{{ errorMessage }}</span>
+            <span>{{ errorMessage() }}</span>
           </div>
 
           <!-- Signup Form -->
-          <form (ngSubmit)="onSubmit()" class="auth-form" *ngIf="!showConfirmationNotice">
+          <form (ngSubmit)="onSubmit()" class="auth-form" *ngIf="!showConfirmationNotice()">
             <div class="form-group">
               <label>الاسم بالكامل <span class="req">*</span></label>
               <div class="input-with-icon">
@@ -108,7 +108,7 @@ import { AuthService } from '../../../core/services/auth.service';
               <div class="input-with-icon">
                 <i class="fa-solid fa-lock icon"></i>
                 <input
-                  [type]="showPassword ? 'text' : 'password'"
+                  [type]="showPassword() ? 'text' : 'password'"
                   [(ngModel)]="password"
                   name="password"
                   required
@@ -117,8 +117,8 @@ import { AuthService } from '../../../core/services/auth.service';
                   class="input-custom"
                   dir="ltr"
                 />
-                <button type="button" class="eye-toggle-btn" (click)="showPassword = !showPassword">
-                  <i class="fa-solid" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                <button type="button" class="eye-toggle-btn" (click)="showPassword.set(!showPassword())">
+                  <i class="fa-solid" [ngClass]="showPassword() ? 'fa-eye-slash' : 'fa-eye'"></i>
                 </button>
               </div>
             </div>
@@ -128,9 +128,9 @@ import { AuthService } from '../../../core/services/auth.service';
               <span>هدية تسجيل: <strong>50 نقطة ولاء مجانية</strong> تضاف لحسابكِ فوراً!</span>
             </div>
 
-            <button type="submit" [disabled]="isLoading || !fullName || !email || !password || !phone" class="btn-primary btn-block">
-              <span *ngIf="!isLoading">إنشاء الحساب وبدء التسوق</span>
-              <span *ngIf="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> جاري إنشاء الحساب...</span>
+            <button type="submit" [disabled]="isLoading() || !fullName || !email || !password || !phone" class="btn-primary btn-block">
+              <span *ngIf="!isLoading()">إنشاء الحساب وبدء التسوق</span>
+              <span *ngIf="isLoading()"><i class="fa-solid fa-spinner fa-spin"></i> جاري إنشاء الحساب...</span>
             </button>
           </form>
 
@@ -336,21 +336,23 @@ import { AuthService } from '../../../core/services/auth.service';
 export class SignupComponent {
   auth = inject(AuthService);
   router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   fullName: string = '';
   email: string = '';
   phone: string = '';
   city: string = 'القاهرة';
   password: string = '';
-  showPassword: boolean = false;
-  isLoading: boolean = false;
-  errorMessage: string = '';
-  showConfirmationNotice: boolean = false;
+  showPassword = signal<boolean>(false);
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string>('');
+  showConfirmationNotice = signal<boolean>(false);
 
   async onSubmit(): Promise<void> {
     if (!this.fullName || !this.email || !this.password || !this.phone) return;
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.cdr.markForCheck();
 
     try {
       const res = await this.auth.signUpCustomer({
@@ -362,12 +364,14 @@ export class SignupComponent {
       });
 
       if (!res.success) {
-        this.errorMessage = res.error || 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى.';
+        this.errorMessage.set(res.error || 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى.');
+        this.cdr.markForCheck();
         return;
       }
 
       if (res.requiresEmailConfirmation) {
-        this.showConfirmationNotice = true;
+        this.showConfirmationNotice.set(true);
+        this.cdr.markForCheck();
         return;
       }
 
@@ -375,9 +379,10 @@ export class SignupComponent {
       this.router.navigate(['/account']);
     } catch (err: any) {
       console.error('Signup submit error:', err);
-      this.errorMessage = err.message || 'حدث خطأ غير متوقع أثناء إنشاء الحساب';
+      this.errorMessage.set(err.message || 'حدث خطأ غير متوقع أثناء إنشاء الحساب');
     } finally {
-      this.isLoading = false;
+      this.isLoading.set(false);
+      this.cdr.markForCheck();
     }
   }
 }

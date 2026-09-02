@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -20,9 +20,9 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
 
           <!-- Error Alert -->
-          <div class="error-alert" *ngIf="errorMessage">
+          <div class="error-alert" *ngIf="errorMessage()">
             <i class="fa-solid fa-circle-exclamation"></i>
-            <span>{{ errorMessage }}</span>
+            <span>{{ errorMessage() }}</span>
           </div>
 
           <!-- Form -->
@@ -163,9 +163,9 @@ import { AuthService } from '../../../core/services/auth.service';
               <span>عند تقديم الطلب، سيقوم فريق الشراكات بالتحقق من بيانات المركز وإصدار كود الإحالة الحصري للمركز وتفعيل البوابة خلال 24 ساعة.</span>
             </div>
 
-            <button type="submit" [disabled]="isLoading || !centerName || !email || !password || !phone || !addressLine" class="btn-primary btn-block">
-              <span *ngIf="!isLoading">إرسال طلب تسجيل المركز</span>
-              <span *ngIf="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...</span>
+            <button type="submit" [disabled]="isLoading() || !centerName || !email || !password || !phone || !addressLine" class="btn-primary btn-block">
+              <span *ngIf="!isLoading()">إرسال طلب تسجيل المركز</span>
+              <span *ngIf="isLoading()"><i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...</span>
             </button>
           </form>
 
@@ -308,6 +308,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class ApplyCenterComponent {
   auth = inject(AuthService);
   router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   centerName: string = '';
   phone: string = '';
@@ -319,8 +320,8 @@ export class ApplyCenterComponent {
   openingHours: string = 'يومياً من 10:00 ص حتى 10:00 م';
   bio: string = '';
   selectedSpecialties: string[] = ['علاجات الشعر والبروتين', 'حمام مغربي وسبا'];
-  isLoading: boolean = false;
-  errorMessage: string = '';
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string>('');
 
   availableSpecialties: string[] = [
     'علاجات الشعر والبروتين',
@@ -340,8 +341,9 @@ export class ApplyCenterComponent {
 
   async onSubmit(): Promise<void> {
     if (!this.centerName || !this.email || !this.password || !this.phone || !this.addressLine) return;
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.cdr.markForCheck();
 
     try {
       const res = await this.auth.applyAsCenter({
@@ -358,16 +360,18 @@ export class ApplyCenterComponent {
       });
 
       if (!res.success) {
-        this.errorMessage = res.error || 'حدث خطأ أثناء تقديم الطلب';
+        this.errorMessage.set(res.error || 'حدث خطأ أثناء تقديم الطلب');
+        this.cdr.markForCheck();
         return;
       }
 
       this.router.navigate(['/pending-review']);
     } catch (err: any) {
       console.error('Center apply submit error:', err);
-      this.errorMessage = err.message || 'حدث خطأ أثناء تقديم الطلب';
+      this.errorMessage.set(err.message || 'حدث خطأ أثناء تقديم الطلب');
     } finally {
-      this.isLoading = false;
+      this.isLoading.set(false);
+      this.cdr.markForCheck();
     }
   }
 }

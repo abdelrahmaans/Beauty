@@ -267,45 +267,51 @@ export class LoginComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const res = await this.auth.signInWithEmail(this.email.trim(), this.password);
-    this.isLoading = false;
+    try {
+      const res = await this.auth.signInWithEmail(this.email.trim(), this.password);
 
-    if (!res.success) {
-      this.errorMessage = res.error || 'فشل في تسجيل الدخول';
-      return;
-    }
+      if (!res.success) {
+        this.errorMessage = res.error || 'فشل في تسجيل الدخول';
+        return;
+      }
 
-    // If returnUrl was specified (e.g. from service booking request), navigate back to it
-    if (this.returnUrl) {
-      this.router.navigateByUrl(this.returnUrl);
-      return;
-    }
+      // If returnUrl was specified (e.g. from service booking request), navigate back to it
+      if (this.returnUrl) {
+        this.router.navigateByUrl(this.returnUrl);
+        return;
+      }
 
-    const ctx = res.context;
-    if (!ctx) {
-      this.router.navigate(['/account']);
-      return;
-    }
-
-    // Role & status based routing
-    if (ctx.status === 'pending') {
-      this.router.navigate(['/pending-review']);
-      return;
-    }
-
-    switch (ctx.view) {
-      case 'admin':
-        this.router.navigate(['/admin']);
-        break;
-      case 'provider':
-        this.router.navigate(['/provider']);
-        break;
-      case 'center':
-        this.router.navigate(['/center']);
-        break;
-      default:
+      const ctx = res.context;
+      if (!ctx) {
         this.router.navigate(['/account']);
-        break;
+        return;
+      }
+
+      // Role & status based routing
+      if (ctx.status === 'pending') {
+        this.router.navigate(['/pending-review']);
+        return;
+      }
+
+      switch (ctx.view) {
+        case 'admin':
+          this.router.navigate(['/admin']);
+          break;
+        case 'provider':
+          this.router.navigate(['/provider']);
+          break;
+        case 'center':
+          this.router.navigate(['/center']);
+          break;
+        default:
+          this.router.navigate(['/account']);
+          break;
+      }
+    } catch (err: any) {
+      console.error('Login submit error:', err);
+      this.errorMessage = err.message || 'حدث خطأ غير متوقع أثناء تسجيل الدخول';
+    } finally {
+      this.isLoading = false;
     }
   }
 }

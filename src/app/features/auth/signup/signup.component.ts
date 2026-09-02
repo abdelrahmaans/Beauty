@@ -352,27 +352,32 @@ export class SignupComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const res = await this.auth.signUpCustomer({
-      email: this.email.trim(),
-      password: this.password,
-      fullName: this.fullName.trim(),
-      phone: this.phone.trim(),
-      city: this.city
-    });
+    try {
+      const res = await this.auth.signUpCustomer({
+        email: this.email.trim(),
+        password: this.password,
+        fullName: this.fullName.trim(),
+        phone: this.phone.trim(),
+        city: this.city
+      });
 
-    this.isLoading = false;
+      if (!res.success) {
+        this.errorMessage = res.error || 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى.';
+        return;
+      }
 
-    if (!res.success) {
-      this.errorMessage = res.error || 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى.';
-      return;
+      if (res.requiresEmailConfirmation) {
+        this.showConfirmationNotice = true;
+        return;
+      }
+
+      // Direct customer routing
+      this.router.navigate(['/account']);
+    } catch (err: any) {
+      console.error('Signup submit error:', err);
+      this.errorMessage = err.message || 'حدث خطأ غير متوقع أثناء إنشاء الحساب';
+    } finally {
+      this.isLoading = false;
     }
-
-    if (res.requiresEmailConfirmation) {
-      this.showConfirmationNotice = true;
-      return;
-    }
-
-    // Direct customer routing
-    this.router.navigate(['/account']);
   }
 }

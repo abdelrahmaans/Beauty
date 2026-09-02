@@ -301,24 +301,29 @@ export class ApplyProviderComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const res = await this.auth.applyAsProvider({
-      email: this.email.trim(),
-      password: this.password,
-      fullName: this.fullName.trim(),
-      phone: this.phone.trim(),
-      city: this.city,
-      specialties: this.selectedSpecialties,
-      bio: this.bio.trim()
-    });
+    try {
+      const res = await this.auth.applyAsProvider({
+        email: this.email.trim(),
+        password: this.password,
+        fullName: this.fullName.trim(),
+        phone: this.phone.trim(),
+        city: this.city,
+        specialties: this.selectedSpecialties,
+        bio: this.bio.trim()
+      });
 
-    this.isLoading = false;
+      if (!res.success) {
+        this.errorMessage = res.error || 'حدث خطأ أثناء تقديم الطلب';
+        return;
+      }
 
-    if (!res.success) {
-      this.errorMessage = res.error || 'حدث خطأ أثناء تقديم الطلب';
-      return;
+      // Always route new applicant to pending review
+      this.router.navigate(['/pending-review']);
+    } catch (err: any) {
+      console.error('Provider apply submit error:', err);
+      this.errorMessage = err.message || 'حدث خطأ أثناء تقديم الطلب';
+    } finally {
+      this.isLoading = false;
     }
-
-    // Always route new applicant to pending review
-    this.router.navigate(['/pending-review']);
   }
 }

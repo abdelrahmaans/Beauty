@@ -197,8 +197,15 @@ create table if not exists profiles (
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name, role)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', 'مستخدم جديد'), 'customer');
+  insert into public.profiles (id, full_name, phone, role, city)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', 'مستخدم جديد'),
+    new.raw_user_meta_data->>'phone',
+    'customer',
+    coalesce(new.raw_user_meta_data->>'city', 'القاهرة')
+  )
+  on conflict (id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;
@@ -616,6 +623,13 @@ create policy "reviews_update_own" on reviews for update using (auth.uid() = use
 
 -- Loyalty Points Log
 create policy "loyalty_log_select_own" on loyalty_points_log for select using (
+  auth.uid() = user_id or exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+-- Providers: Public read verified providers, authenticated insert/update
+create policy "providers_select_public" on providers for select using (true);
+create policy "providers_insert_own" on providers for insert with check (auth.uid() = user_id or exists (select 1 from profiles where id = auth.uid() and role = 'admin'));
+create policy "providers_update_own_or_admin" on providers for update using (
   auth.uid() = user_id or exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
 

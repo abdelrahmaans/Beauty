@@ -343,26 +343,31 @@ export class ApplyCenterComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const res = await this.auth.applyAsCenter({
-      email: this.email.trim(),
-      password: this.password,
-      centerName: this.centerName.trim(),
-      phone: this.phone.trim(),
-      city: this.city,
-      addressLine: this.addressLine.trim(),
-      specialties: this.selectedSpecialties,
-      bio: this.bio.trim(),
-      openingHours: this.openingHours,
-      proposedDiscount: this.proposedDiscount
-    });
+    try {
+      const res = await this.auth.applyAsCenter({
+        email: this.email.trim(),
+        password: this.password,
+        centerName: this.centerName.trim(),
+        phone: this.phone.trim(),
+        city: this.city,
+        addressLine: this.addressLine.trim(),
+        specialties: this.selectedSpecialties,
+        bio: this.bio.trim(),
+        openingHours: this.openingHours,
+        proposedDiscount: this.proposedDiscount
+      });
 
-    this.isLoading = false;
+      if (!res.success) {
+        this.errorMessage = res.error || 'حدث خطأ أثناء تقديم الطلب';
+        return;
+      }
 
-    if (!res.success) {
-      this.errorMessage = res.error || 'حدث خطأ أثناء تقديم الطلب';
-      return;
+      this.router.navigate(['/pending-review']);
+    } catch (err: any) {
+      console.error('Center apply submit error:', err);
+      this.errorMessage = err.message || 'حدث خطأ أثناء تقديم الطلب';
+    } finally {
+      this.isLoading = false;
     }
-
-    this.router.navigate(['/pending-review']);
   }
 }

@@ -18,7 +18,7 @@ import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-
 import { ApplyProviderComponent } from './features/auth/apply-provider/apply-provider.component';
 import { ApplyCenterComponent } from './features/auth/apply-center/apply-center.component';
 import { PendingReviewComponent } from './features/auth/pending-review/pending-review.component';
-import { roleGuard } from './core/guards/auth.guard';
+import { roleGuard, authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -82,6 +82,7 @@ export const routes: Routes = [
   {
     path: 'booking/my-bookings',
     component: MyBookingsComponent,
+    canActivate: [authGuard],
     title: 'متابعة جلساتي المنزلية | منصة بيوتي'
   },
   {
@@ -92,6 +93,7 @@ export const routes: Routes = [
   {
     path: 'centers/my-codes',
     component: MyReferralsComponent,
+    canActivate: [authGuard],
     title: 'أكواد الخصم وإحالاتي في المراكز | منصة بيوتي'
   },
   {

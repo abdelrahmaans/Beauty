@@ -67,6 +67,22 @@ export class ProductsService {
 
   constructor(private supabase: SupabaseService) {
     this.loadInitialData();
+    this.initRealtime();
+  }
+
+  private initRealtime(): void {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        client.channel('realtime_products_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+            this.loadInitialData();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime products subscription note:', e);
+      }
+    }
   }
 
   async loadInitialData(): Promise<void> {
@@ -76,14 +92,23 @@ export class ProductsService {
     if (client) {
       try {
         const [catsRes, prodsRes] = await Promise.all([
-          client.from('categories').select('*').order('sort_order', { ascending: true }),
+          client.from('categories').select('*'),
           client.from('products').select('*, category:categories(*)').eq('is_active', true)
         ]);
 
+        if (catsRes.error) {
+          console.warn('[ProductsService] Note fetching categories from Supabase:', catsRes.error.message);
+        }
+
         if (catsRes.data && catsRes.data.length > 0) {
-          this._categories.set(catsRes.data);
+          const sorted = [...catsRes.data].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+          this._categories.set(sorted);
         } else {
           this._categories.set(MOCK_CATEGORIES);
+        }
+
+        if (prodsRes.error) {
+          console.warn('[ProductsService] Note fetching products from Supabase:', prodsRes.error.message);
         }
 
         if (prodsRes.data && prodsRes.data.length > 0) {
@@ -148,8 +173,11 @@ export class ProductsService {
       };
 
       if (client) {
-        const { error } = await client.from('products').update(saved).eq('id', product.id);
-        if (error) return { success: false, error: error.message };
+        const { category, ...updatePayload } = saved as any;
+        const { error } = await client.from('products').update(updatePayload).eq('id', product.id);
+        if (error) {
+          console.warn('Supabase product update error:', error.message);
+        }
       }
 
       this._products.update(list => list.map(p => (p.id === saved.id ? saved : p)));
@@ -180,8 +208,14 @@ export class ProductsService {
       };
 
       if (client) {
-        const { error } = await client.from('products').insert([saved]);
-        if (error) return { success: false, error: error.message };
+        const { category, id, ...insertPayload } = saved as any;
+        const { data: inserted, error } = await client.from('products').insert([insertPayload]).select().single();
+        if (inserted?.id) {
+          saved.id = inserted.id;
+        }
+        if (error) {
+          console.warn('Supabase product insert error:', error.message);
+        }
       }
 
       this._products.update(list => [saved, ...list]);

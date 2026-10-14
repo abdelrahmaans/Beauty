@@ -26,6 +26,22 @@ export class ProvidersService {
     private auth: AuthService
   ) {
     this.loadProviders();
+    this.initRealtime();
+  }
+
+  private initRealtime(): void {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        client.channel('realtime_providers_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'providers' }, () => {
+            this.loadProviders();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime providers subscription note:', e);
+      }
+    }
   }
 
   async loadProviders(): Promise<void> {
@@ -195,9 +211,39 @@ export class ProvidersService {
     };
 
     const client = this.supabase.client;
-    if (client) {
+    if (client && userProfile) {
       try {
-        await client.from('providers').insert([newProvider]);
+        const provRow = {
+          user_id: userProfile.id,
+          type: 'freelancer',
+          status: 'pending',
+          display_name: payload.displayName,
+          phone: payload.phone,
+          city: payload.city,
+          specialties: payload.specialties,
+          bio: payload.bio,
+          rating_avg: 5.0,
+          rating_count: 0,
+          is_available: true,
+          avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80'
+        };
+        const { data: inserted, error } = await client.from('providers').insert([provRow]).select().single();
+        if (inserted?.id) {
+          newProvider.id = inserted.id;
+          if (newDocs.length > 0) {
+            const docRows = newDocs.map(d => ({
+              provider_id: inserted.id,
+              doc_type: d.doc_type,
+              title: d.title,
+              storage_path: d.storage_path,
+              reviewed: false
+            }));
+            await client.from('provider_documents').insert(docRows);
+          }
+        }
+        if (error) {
+          console.warn('Supabase provider insert note:', error.message);
+        }
       } catch (err) {
         console.warn('Fallback to local storage for provider onboarding:', err);
       }

@@ -49,6 +49,22 @@ export class BookingsService {
     private providersService: ProvidersService
   ) {
     this.loadBookings();
+    this.initRealtime();
+  }
+
+  private initRealtime(): void {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        client.channel('realtime_bookings_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+            this.loadBookings();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime bookings subscription note:', e);
+      }
+    }
   }
 
   async loadBookings(): Promise<void> {
@@ -124,7 +140,24 @@ export class BookingsService {
     const client = this.supabase.client;
     if (client) {
       try {
-        await client.from('bookings').insert([newBooking]);
+        const bookingRow: any = {
+          user_id: userProfile?.id,
+          service_type: payload.serviceType,
+          status: 'requested',
+          requested_area: payload.requestedArea,
+          scheduled_at: payload.scheduledAt,
+          notes: payload.notes || '',
+          payment_status: 'unpaid'
+        };
+        if (payload.customerPhone) bookingRow.customer_phone = payload.customerPhone;
+
+        const { data, error } = await client.from('bookings').insert([bookingRow]).select().single();
+        if (data?.id) {
+          newBooking.id = data.id;
+        }
+        if (error) {
+          console.warn('Supabase booking insert note:', error.message);
+        }
       } catch (e) {
         console.warn('Fallback to local storage for booking request:', e);
       }
@@ -149,6 +182,20 @@ export class BookingsService {
   async confirmBookingOffer(bookingId: string, providerId: string, finalPrice: number): Promise<boolean> {
     const provider = this.providersService.getProviderById(providerId);
     if (!provider) return false;
+
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('bookings').update({
+          provider_id: providerId,
+          agreed_price: finalPrice,
+          status: 'offered',
+          updated_at: new Date().toISOString()
+        }).eq('id', bookingId);
+      } catch (e) {
+        console.warn('Supabase update bookings fallback:', e);
+      }
+    }
 
     this._bookings.update(list =>
       list.map(b => {
@@ -183,6 +230,19 @@ export class BookingsService {
 
   // 3. Customer accepts offer and pays online
   async acceptBookingOffer(bookingId: string): Promise<boolean> {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('bookings').update({
+          status: 'confirmed',
+          payment_status: 'paid',
+          updated_at: new Date().toISOString()
+        }).eq('id', bookingId);
+      } catch (e) {
+        console.warn('Supabase accept booking offer fallback:', e);
+      }
+    }
+
     this._bookings.update(list =>
       list.map(b => {
         if (b.id === bookingId) {
@@ -214,6 +274,18 @@ export class BookingsService {
 
   // 4. Specialist or Admin updates booking progress status
   async updateBookingStatus(bookingId: string, status: BookingStatus): Promise<boolean> {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('bookings').update({
+          status,
+          updated_at: new Date().toISOString()
+        }).eq('id', bookingId);
+      } catch (e) {
+        console.warn('Supabase updateBookingStatus fallback:', e);
+      }
+    }
+
     this._bookings.update(list =>
       list.map(b => {
         if (b.id === bookingId) {
@@ -244,6 +316,14 @@ export class BookingsService {
         payout_status: 'pending',
         created_at: new Date().toISOString()
       };
+
+      if (client) {
+        try {
+          await client.from('commissions').insert([commissionRecord]);
+        } catch (e) {
+          console.warn('Supabase commissions insert fallback:', e);
+        }
+      }
 
       this._commissions.update(c => [commissionRecord, ...c]);
 
@@ -283,6 +363,15 @@ export class BookingsService {
       created_at: new Date().toISOString()
     };
 
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('booking_reviews').insert([review]);
+      } catch (e) {
+        console.warn('Supabase booking_reviews fallback:', e);
+      }
+    }
+
     this._bookings.update(list =>
       list.map(b => (b.id === bookingId ? { ...b, review } : b))
     );
@@ -303,6 +392,16 @@ export class BookingsService {
       status: 'open',
       created_at: new Date().toISOString()
     };
+
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('booking_reports').insert([report]);
+        await client.from('bookings').update({ status: 'reported' }).eq('id', bookingId);
+      } catch (e) {
+        console.warn('Supabase booking_reports fallback:', e);
+      }
+    }
 
     this._reports.update(r => [report, ...r]);
     this._bookings.update(list =>

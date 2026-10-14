@@ -1,0 +1,1274 @@
+<div class="admin-standalone-wrapper">
+
+  <!-- Mobile Top Bar with Burger Button -->
+  <header class="admin-mobile-topbar show-on-mobile">
+    <div class="mobile-topbar-brand">
+      <div class="brand-symbol-mini">
+        <i class="fa-solid fa-feather-pointed"></i>
+      </div>
+      <div class="mobile-brand-meta">
+        <strong class="mobile-brand-title">BEAUTY</strong>
+        <span class="mobile-brand-subtitle">لوحة الإدارة المركزية</span>
+      </div>
+    </div>
+
+    <div class="mobile-topbar-actions">
+      <a routerLink="/" target="_blank" class="mobile-action-btn" title="معاينة المتجر للعملاء">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </a>
+      <button class="burger-menu-btn" (click)="toggleMobileSidebar()" [attr.aria-expanded]="isMobileSidebarOpen" title="القائمة الرئيسية">
+        <i class="fa-solid" [ngClass]="isMobileSidebarOpen ? 'fa-xmark' : 'fa-bars-staggered'"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Backdrop -->
+  <div
+    class="sidebar-backdrop show-on-mobile"
+    *ngIf="isMobileSidebarOpen"
+    (click)="closeMobileSidebar()"
+  ></div>
+
+  <!-- =================================================================== -->
+  <!-- RIGHT SIDEBAR (سايد بار الإدارة على اليمين) -->
+  <!-- =================================================================== -->
+  <aside class="admin-sidebar" [class.mobile-open]="isMobileSidebarOpen">
+
+    <!-- Mobile Drawer Close Header -->
+    <div class="sidebar-mobile-close-bar show-on-mobile">
+      <span class="close-bar-title"><i class="fa-solid fa-shield-halved text-primary"></i> إدارة المنصة</span>
+      <button class="close-sidebar-btn" (click)="closeMobileSidebar()" title="إغلاق القائمة">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Sidebar Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-symbol">
+        <i class="fa-solid fa-feather-pointed"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">BEAUTY</span>
+        <span class="brand-badge">لوحة الإدارة المركزية</span>
+      </div>
+    </div>
+
+    <!-- Admin Profile Badge -->
+    <div class="admin-profile-card">
+      <div class="admin-avatar">
+        <i class="fa-solid fa-user-shield"></i>
+        <span class="online-indicator" title="متصل"></span>
+      </div>
+      <div class="admin-details">
+        <strong class="admin-name">{{ auth.profile()?.full_name || 'مدير منصة بيوتي' }}</strong>
+        <span class="admin-role">مسؤول النظام المركزي</span>
+        <small class="admin-email text-muted">admin&#64;beauty.com</small>
+      </div>
+    </div>
+
+    <!-- Navigation Menu Links -->
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">الأقسام والعمليات</span>
+
+      <!-- 1. Overview -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'overview'"
+        (click)="setTab('overview')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-gauge-high icon"></i>
+          <span>نظرة عامة والمهام</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="getPendingActionsCount() > 0">
+          {{ getPendingActionsCount() }}
+        </span>
+      </button>
+
+      <!-- 2. Orders & Shipping -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'orders'"
+        (click)="setTab('orders')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-truck-ramp-box icon"></i>
+          <span>الطلبات والشحن</span>
+        </div>
+        <span class="counter-badge" [class.warning]="getOrdersCountByStatus('pending') > 0">
+          {{ ordersService.orders().length }}
+        </span>
+      </button>
+
+      <!-- 3. Sessions & Matching -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'matching'"
+        (click)="setTab('matching')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-wand-magic-sparkles icon"></i>
+          <span>طلبات الجلسات والترشيح</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="bookingsService.pendingRequests().length > 0">
+          {{ bookingsService.pendingRequests().length }}
+        </span>
+      </button>
+
+      <!-- 4. Providers & Centers Verification -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'providers'"
+        (click)="setTab('providers')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-id-card-clip icon"></i>
+          <span>توثيق الشركاء والمراكز</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="getPendingProvidersCount() > 0">
+          {{ getPendingProvidersCount() }}
+        </span>
+      </button>
+
+      <!-- 5. Products & Inventory -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'products'"
+        (click)="setTab('products')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-tags icon"></i>
+          <span>المنتجات والمخزون</span>
+        </div>
+        <span class="counter-badge neutral">{{ productsService.products().length }}</span>
+      </button>
+
+      <!-- 6. Partner Centers & Codes -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'centers_referrals'"
+        (click)="setTab('centers_referrals')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-store icon"></i>
+          <span>المراكز الشريكة والأكواد</span>
+        </div>
+        <span class="counter-badge neutral">{{ centersService.centers().length }}</span>
+      </button>
+
+      <!-- 7. Promotional Banners -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'banners'"
+        (click)="setTab('banners')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-rectangle-ad icon"></i>
+          <span>البانرات الترويجية</span>
+        </div>
+        <span class="counter-badge neutral">{{ bannersService.banners().length }}</span>
+      </button>
+
+      <!-- 8. Payment Proofs -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'payments'"
+        (click)="setTab('payments')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-receipt icon"></i>
+          <span>إثباتات الدفع</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="paymentProofsService.pendingProofs().length > 0">
+          {{ paymentProofsService.pendingProofs().length }}
+        </span>
+      </button>
+
+      <!-- 9. Coupons -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'coupons'"
+        (click)="setTab('coupons')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-ticket icon"></i>
+          <span>الكوبونات والعروض</span>
+        </div>
+      </button>
+    </nav>
+
+    <!-- Sidebar Bottom Actions -->
+    <div class="sidebar-bottom-actions">
+      <!-- Live Store Preview Button -->
+      <a routerLink="/" target="_blank" class="sidebar-btn-store" title="معاينة المتجر للعملاء في نافذة جديدة">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        <span>معاينة المتجر للعملاء</span>
+      </a>
+
+      <!-- Logout Button -->
+      <button (click)="auth.signOut()" class="sidebar-btn-logout">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- =================================================================== -->
+  <!-- MAIN WORKSPACE CONTENT (مساحة العمل والمحتوى على اليسار) -->
+  <!-- =================================================================== -->
+  <main class="admin-main-area">
+
+    <!-- Workspace Top Navbar (يظهر فقط في قسم النظرة العامة والمهام العاجلة) -->
+    <header class="workspace-header animate-fade-in" *ngIf="activeTab === 'overview'">
+      <div class="workspace-title-box">
+        <div class="breadcrumb-tag">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>لوحة التحكم الإدارية</span>
+          <i class="fa-solid fa-chevron-left divider-icon"></i>
+          <span class="active-crumb">نظرة عامة والمهام العاجلة</span>
+        </div>
+        <h2 class="current-section-title">نظرة عامة والمهام العاجلة</h2>
+      </div>
+
+      <div class="workspace-quick-actions">
+        <button (click)="openNewBannerModal()" class="btn-outline btn-sm">
+          <i class="fa-solid fa-rectangle-ad"></i>
+          <span>إضافة بانر</span>
+        </button>
+
+        <button (click)="openNewProductModal()" class="btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i>
+          <span>إضافة منتج</span>
+        </button>
+
+        <a routerLink="/" target="_blank" class="btn-store-mini" title="معاينة المتجر للعملاء">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+      </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: OVERVIEW (الداشبورد الأساسية) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper animate-fade-in" *ngIf="activeTab === 'overview'">
+
+      <!-- Top KPI Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card beauty-card">
+          <div class="metric-icon money"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">إجمالي مبيعات المتجر</span>
+            <strong class="metric-val">{{ getTotalSales() | number }} <small>ج.م</small></strong>
+            <span class="metric-sub text-success"><i class="fa-solid fa-arrow-trend-up"></i> {{ ordersService.orders().length }} طلب متجر مسجل</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon orders"><i class="fa-solid fa-spa"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">طلبات الجلسات المنزلية</span>
+            <strong class="metric-val">{{ bookingsService.bookings().length }}</strong>
+            <span class="metric-sub text-warning" *ngIf="bookingsService.pendingRequests().length > 0">
+              <i class="fa-solid fa-clock"></i> {{ bookingsService.pendingRequests().length }} طلبات تنتظر الترشيح
+            </span>
+            <span class="metric-sub text-success" *ngIf="bookingsService.pendingRequests().length === 0">
+              جميع الطلبات مسندة ومحدثة ✓
+            </span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon centers"><i class="fa-solid fa-store"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">المراكز الشريكة المعتمدة</span>
+            <strong class="metric-val">{{ centersService.centers().length }}</strong>
+            <span class="metric-sub text-success">{{ referralsService.redemptions().length }} عميلة استخدمت أكواد الخصم</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon profit"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">أرباح وعمولات المنصة</span>
+            <strong class="metric-val">{{ getTotalPlatformRevenue() | number }} <small>ج.م</small></strong>
+            <span class="metric-sub">عمولات جلسات (15%) + إحالات المراكز</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Required / Needs Attention Feed -->
+      <div class="action-feed-box beauty-card">
+        <div class="feed-header">
+          <div class="feed-title-wrap">
+            <span class="pulse-indicator"></span>
+            <h3>إجراءات ومهام بانتظار الإدارة (Needs Attention)</h3>
+          </div>
+          <span class="badge-pill warning">{{ getPendingActionsCount() }} مهام مطلوبة</span>
+        </div>
+
+        <div class="feed-cards-grid">
+          <!-- Item 1: Payment Proofs -->
+          <div class="feed-item-card" [class.has-pending]="paymentProofsService.pendingProofs().length > 0" (click)="activeTab = 'payments'">
+            <div class="fi-icon payment"><i class="fa-solid fa-receipt"></i></div>
+            <div class="fi-content">
+              <h4>مراجعة إثباتات الدفع (InstaPay / كاش)</h4>
+              <p *ngIf="paymentProofsService.pendingProofs().length > 0">
+                يوجد <strong>{{ paymentProofsService.pendingProofs().length }} إيصال تحويل جديد</strong> بحاجة للمراجعة لتأكيد الطلبات فوراً.
+              </p>
+              <p *ngIf="paymentProofsService.pendingProofs().length === 0" class="text-muted">
+                لا توجد إيصالات معلقة حالياً، جميع التحويلات معتمدة.
+              </p>
+            </div>
+            <button class="feed-action-btn" [class.urgent]="paymentProofsService.pendingProofs().length > 0">
+              <span>مراجعة الإيصالات</span>
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+          </div>
+
+          <!-- Item 2: Pending Providers -->
+          <div class="feed-item-card" [class.has-pending]="getPendingProvidersCount() > 0" (click)="activeTab = 'providers'">
+            <div class="fi-icon provider"><i class="fa-solid fa-id-card-clip"></i></div>
+            <div class="fi-content">
+              <h4>طلبات انضمام وتوثيق الشركاء</h4>
+              <p *ngIf="getPendingProvidersCount() > 0">
+                يوجد <strong>{{ getPendingProvidersCount() }} طلب انضمام جديد</strong> (أخصائيات أو مراكز) بانتظار الموافقة والتفعيل.
+              </p>
+              <p *ngIf="getPendingProvidersCount() === 0" class="text-muted">
+                جميع طلبات الانضمام معتمدة ونشطة.
+              </p>
+            </div>
+            <button class="feed-action-btn" [class.urgent]="getPendingProvidersCount() > 0">
+              <span>فحص وقبول الشركاء</span>
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+          </div>
+
+          <!-- Item 3: Pending Session Requests -->
+          <div class="feed-item-card" [class.has-pending]="bookingsService.pendingRequests().length > 0" (click)="activeTab = 'matching'">
+            <div class="fi-icon session"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="fi-content">
+              <h4>طلبات جلسات منزلية تحتاج ترشيح</h4>
+              <p *ngIf="bookingsService.pendingRequests().length > 0">
+                يوجد <strong>{{ bookingsService.pendingRequests().length }} طلب جلسة منزلية</strong> من عميلات تنتظر ترشيح الأخصائية وإرسال العرض.
+              </p>
+              <p *ngIf="bookingsService.pendingRequests().length === 0" class="text-muted">
+                جميع طلبات الجلسات تم ترشيح أخصائيات لها.
+              </p>
+            </div>
+            <button class="feed-action-btn" [class.urgent]="bookingsService.pendingRequests().length > 0">
+              <span>ترشيح الأخصائيات</span>
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+          </div>
+
+          <!-- Item 4: Pending Store Orders -->
+          <div class="feed-item-card" [class.has-pending]="getOrdersCountByStatus('pending') > 0" (click)="activeTab = 'orders'">
+            <div class="fi-icon shipping"><i class="fa-solid fa-truck-fast"></i></div>
+            <div class="fi-content">
+              <h4>طلبات المتجر وتجهيز الشحن</h4>
+              <p *ngIf="getOrdersCountByStatus('pending') > 0">
+                يوجد <strong>{{ getOrdersCountByStatus('pending') }} طلبات متجر جديدة</strong> قيد الانتظار بحاجة للتأكيد والإرسال لشركة الشحن.
+              </p>
+              <p *ngIf="getOrdersCountByStatus('pending') === 0" class="text-muted">
+                جميع طلبات المتجر تم تأكيدها وجاري شحنها.
+              </p>
+            </div>
+            <button class="feed-action-btn" [class.urgent]="getOrdersCountByStatus('pending') > 0">
+              <span>متابعة الشحن</span>
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Live Operations Stream -->
+      <div class="recent-stream-grid">
+        <!-- Col 1: Recent Orders -->
+        <div class="stream-card beauty-card">
+          <div class="stream-header">
+            <h4><i class="fa-solid fa-box text-primary"></i> أحدث طلبات المتجر</h4>
+            <button (click)="activeTab = 'orders'" class="text-link">عرض الكل</button>
+          </div>
+          <div class="stream-list">
+            <div class="stream-item" *ngFor="let ord of ordersService.orders().slice(0, 4)">
+              <div class="si-info">
+                <strong>#{{ ord.id }} — {{ ord.shipping_full_name }}</strong>
+                <small>{{ ord.shipping_city }} • {{ ord.total_price }} ج.م</small>
+              </div>
+              <span class="status-badge" [ngClass]="'status-' + ord.status">{{ getOrderStatusArabic(ord.status) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 2: Recent Bookings -->
+        <div class="stream-card beauty-card">
+          <div class="stream-header">
+            <h4><i class="fa-solid fa-sparkles text-primary"></i> أحدث حجوزات الجلسات</h4>
+            <button (click)="activeTab = 'matching'" class="text-link">عرض الكل</button>
+          </div>
+          <div class="stream-list">
+            <div class="stream-item" *ngFor="let bk of bookingsService.bookings().slice(0, 4)">
+              <div class="si-info">
+                <strong>{{ bk.service_type }}</strong>
+                <small>{{ bk.customer_name }} • {{ bk.requested_area }}</small>
+              </div>
+              <span class="status-pill" [ngClass]="'status-' + bk.status">{{ getBookingStatusArabic(bk.status) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: ORDERS & SHIPPING (الطلبات ومتابعة الشحن) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'orders'">
+      <div class="panel-header">
+        <div>
+          <h3>متابعة طلبات المتجر والتوصيل مع شركات الشحن</h3>
+          <p class="panel-subtitle text-muted">تتبعي كل أوردر من لحظة تسجيله حتى تسليمه للمندوب وللعميلة</p>
+        </div>
+
+        <div class="filter-pills">
+          <button class="badge-pill" [class.active]="orderFilter === 'all'" (click)="orderFilter = 'all'">
+            الكل ({{ ordersService.orders().length }})
+          </button>
+          <button class="badge-pill warning" [class.active]="orderFilter === 'pending'" (click)="orderFilter = 'pending'">
+            جديد قيد الانتظار ({{ getOrdersCountByStatus('pending') }})
+          </button>
+          <button class="badge-pill info" [class.active]="orderFilter === 'confirmed'" (click)="orderFilter = 'confirmed'">
+            تم التأكيد للتجهيز ({{ getOrdersCountByStatus('confirmed') }})
+          </button>
+          <button class="badge-pill primary" [class.active]="orderFilter === 'shipped'" (click)="orderFilter = 'shipped'">
+            في الطريق مع الشحن ({{ getOrdersCountByStatus('shipped') }})
+          </button>
+          <button class="badge-pill success" [class.active]="orderFilter === 'delivered'" (click)="orderFilter = 'delivered'">
+            تم التسليم ({{ getOrdersCountByStatus('delivered') }})
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>رقم الطلب والتاريخ</th>
+              <th>بيانات العميلة</th>
+              <th>عنوان الشحن والمحافظة</th>
+              <th>إجمالي الفاتورة</th>
+              <th>طريقة الدفع</th>
+              <th>حالة الطلب الحالية</th>
+              <th>تحديث حالة الشحن والتوصيل</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ord of getFilteredOrders()">
+              <td>
+                <strong>#{{ ord.id }}</strong>
+                <small class="d-block text-muted">{{ ord.created_at | date:'mediumDate' }}</small>
+              </td>
+              <td>
+                <strong>{{ ord.shipping_full_name }}</strong>
+                <small class="d-block text-muted" dir="ltr">{{ ord.shipping_phone }}</small>
+              </td>
+              <td>
+                <span class="city-tag"><i class="fa-solid fa-location-dot"></i> {{ ord.shipping_city }}</span>
+                <p class="address-snippet text-muted">{{ ord.shipping_address }}</p>
+              </td>
+              <td>
+                <strong class="text-primary price-lead">{{ ord.total_price }} ج.م</strong>
+                <small class="d-block text-muted" *ngIf="ord.discount_amount">خصم: {{ ord.discount_amount }} ج.م</small>
+              </td>
+              <td>
+                <span class="channel-chip" [class.instapay]="ord.payment_method === 'card'" [class.other]="ord.payment_method === 'cash_on_delivery'">
+                  <i class="fa-solid" [ngClass]="ord.payment_method === 'cash_on_delivery' ? 'fa-money-bill-wave' : 'fa-credit-card'"></i>
+                  {{ ord.payment_method === 'cash_on_delivery' ? 'دفع عند الاستلام' : 'دفع إلكتروني' }}
+                </span>
+                <small class="d-block mt-1 font-bold" [class.text-success]="ord.payment_status === 'paid'" [class.text-warning]="ord.payment_status === 'unpaid'">
+                  {{ ord.payment_status === 'paid' ? 'مدفوع ✓' : 'غير مدفوع' }}
+                </small>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="'status-' + ord.status">
+                  {{ getOrderStatusArabic(ord.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="status-action-wrap">
+                  <select [ngModel]="ord.status" (ngModelChange)="onUpdateOrderStatus(ord.id, $event)" class="status-select">
+                    <option value="pending">جديد قيد الانتظار</option>
+                    <option value="confirmed">تم التأكيد والتجهيز</option>
+                    <option value="shipped">تم التسليم لشركة الشحن</option>
+                    <option value="delivered">تم التسليم للعميلة ✓</option>
+                    <option value="cancelled">ملغي ✗</option>
+                  </select>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: MATCHING & SESSIONS (طلبات الجلسات وترشيح الأخصائيات) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'matching'">
+      <div class="panel-header">
+        <div>
+          <h3>طابور طلبات الجلسات وترشيح الأخصائيات المعتمدات</h3>
+          <p class="panel-subtitle text-muted">رشحي أفضل أخصائية معتمدة حسب القرب الجغرافي والتخصص وتابعي تقييمات العميلات بعد انتهاء الجلسة</p>
+        </div>
+
+        <div class="filter-pills">
+          <button class="badge-pill" [class.active]="sessionFilter === 'all'" (click)="sessionFilter = 'all'">
+            جميع الطلبات ({{ bookingsService.bookings().length }})
+          </button>
+          <button class="badge-pill warning" [class.active]="sessionFilter === 'requested'" (click)="sessionFilter = 'requested'">
+            طلبات جديدة بانتظار الترشيح ({{ bookingsService.pendingRequests().length }})
+          </button>
+          <button class="badge-pill info" [class.active]="sessionFilter === 'in_progress'" (click)="sessionFilter = 'in_progress'">
+            جلسات جارية ومؤكدة
+          </button>
+          <button class="badge-pill success" [class.active]="sessionFilter === 'completed'" (click)="sessionFilter = 'completed'">
+            جلسات مكتملة ومقيمة
+          </button>
+        </div>
+      </div>
+
+      <div class="matching-queue-list">
+        <div
+          class="queue-booking-item"
+          *ngFor="let bk of getFilteredBookings()"
+          [class.highlight-pending]="bk.status === 'requested'"
+        >
+          <div class="q-top">
+            <div class="q-client-box">
+              <span class="q-id">طلب رقم #{{ bk.id }}</span>
+              <h4 class="q-srv">{{ bk.service_type }}</h4>
+              <div class="q-meta">
+                <span><i class="fa-solid fa-user"></i> {{ bk.customer_name }}</span>
+                <span><i class="fa-solid fa-phone" dir="ltr"></i> {{ bk.customer_phone }}</span>
+                <span><i class="fa-solid fa-location-dot"></i> {{ bk.requested_area }}</span>
+                <span><i class="fa-regular fa-calendar"></i> {{ bk.scheduled_at | date:'medium' }}</span>
+              </div>
+              <p class="q-notes text-muted" *ngIf="bk.notes">
+                <i class="fa-solid fa-note-sticky"></i> ملاحظات العميلة: {{ bk.notes }}
+              </p>
+            </div>
+
+            <div class="q-status-box">
+              <span class="status-pill" [ngClass]="'status-' + bk.status">
+                {{ getBookingStatusArabic(bk.status) }}
+              </span>
+              <div class="q-price" *ngIf="bk.agreed_price">
+                السعر المتفق عليه: <strong>{{ bk.agreed_price }} ج.م</strong>
+                <small class="d-block text-success">عمولة المنصة (15%): {{ Math.round(bk.agreed_price * 0.15) }} ج.م</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matching Engine: For new requested sessions -->
+          <div class="matching-engine-box" *ngIf="bk.status === 'requested'">
+            <div class="engine-header">
+              <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+              <strong>ترشيح النظام الذكي (الأخصائيات المعتمدات الأقرب للعنوان والمطابقة للتخصص):</strong>
+            </div>
+
+            <div class="candidates-cards-grid">
+              <div
+                class="candidate-card"
+                *ngFor="let cand of getCandidateProviders(bk.service_type, bk.requested_area); let idx = index"
+                [class.selected]="selectedProviderId[bk.id] === cand.id || (!selectedProviderId[bk.id] && idx === 0)"
+                (click)="selectCandidate(bk.id, cand.id, cand.basePrice || 1150)"
+              >
+                <div class="c-rank-badge">المرشحة #{{ idx + 1 }} {{ idx === 0 ? '(الأفضل مطابقة)' : '' }}</div>
+                <div class="c-profile">
+                  <img [src]="cand.avatar_url" class="c-avatar" />
+                  <div>
+                    <strong>{{ cand.display_name }}</strong>
+                    <span class="c-rating">★ {{ cand.rating_avg }} ({{ cand.rating_count }} جلسة)</span>
+                    <span class="c-dist"><i class="fa-solid fa-map-pin"></i> المسافة: {{ cand.distance_km }} كم</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-offer-confirm-bar">
+              <div class="price-input-box">
+                <label>السعر النهائي المقترح للجلسة (ج.م):</label>
+                <input
+                  type="number"
+                  [ngModel]="offerPrices[bk.id] || 1150"
+                  (ngModelChange)="offerPrices[bk.id] = $event"
+                  class="input-custom price-input"
+                />
+              </div>
+              <button (click)="confirmAndDispatchOffer(bk.id)" class="btn-primary dispatch-btn">
+                <i class="fa-solid fa-paper-plane"></i> اعتماد وترشيح الأخصائية وإرسال العرض للعميلة
+              </button>
+            </div>
+          </div>
+
+          <!-- Assigned Provider Bar -->
+          <div class="assigned-provider-bar" *ngIf="bk.provider && bk.status !== 'requested'">
+            <div class="ap-info">
+              <img [src]="bk.provider.avatar_url" class="ap-avatar" />
+              <div>
+                <span class="ap-lbl">الأخصائية المسند إليها التنفيذ:</span>
+                <strong>{{ bk.provider.display_name }}</strong> (★ {{ bk.provider.rating_avg }})
+                <small class="d-block text-muted">{{ bk.provider.phone }}</small>
+              </div>
+            </div>
+
+            <div class="admin-quick-status">
+              <label>تحديث مرحلة الجلسة:</label>
+              <select [ngModel]="bk.status" (ngModelChange)="onUpdateBookingStatus(bk.id, $event)" class="status-select">
+                <option value="offered">تم إرسال العرض</option>
+                <option value="confirmed">مؤكد ومدفوع</option>
+                <option value="in_progress">الجلسة جارية</option>
+                <option value="completed">مكتملة بنجاح ✓</option>
+                <option value="cancelled">ملغية ✗</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Customer Review & Rating if completed -->
+          <div class="completed-review-box" *ngIf="bk.status === 'completed'">
+            <div class="cr-header">
+              <span class="stars-gold">★ ★ ★ ★ ★ 5.0</span>
+              <strong>تقييم ورأي العميلة بعد الجلسة:</strong>
+            </div>
+            <p class="cr-comment">"جلسة احترافية جداً، الأخصائية وصلت في الموعد بكامل أجهزتها والنتيجة ممتازة، شكراً بيوتي!"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: PROVIDERS VERIFICATION (توثيق واعتماد الأخصائيات والمراكز) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'providers'">
+      <div class="panel-header">
+        <div>
+          <h3>سجل الشركاء وطلبات الانضمام والتوثيق</h3>
+          <p class="panel-subtitle text-muted">اعتمادي طلبات الأخصائيات والمراكز الشريكة المعلقة بنقرة واحدة لتفعيل حساباتهم فوراً</p>
+        </div>
+
+        <div class="filter-pills">
+          <button class="badge-pill" [class.active]="providerFilter === 'all'" (click)="providerFilter = 'all'">
+            الكل ({{ providersService.providers().length }})
+          </button>
+          <button class="badge-pill warning" [class.active]="providerFilter === 'pending'" (click)="providerFilter = 'pending'">
+            طلبات قيد المراجعة ({{ getPendingProvidersCount() }})
+          </button>
+          <button class="badge-pill" [class.active]="providerFilter === 'freelancer'" (click)="providerFilter = 'freelancer'">
+            أخصائيات فريلانسر
+          </button>
+          <button class="badge-pill" [class.active]="providerFilter === 'center'" (click)="providerFilter = 'center'">
+            مراكز تجميل
+          </button>
+        </div>
+      </div>
+
+      <div class="providers-admin-grid">
+        <div class="provider-admin-card" *ngFor="let p of getFilteredProviders()">
+          <div class="pa-header">
+            <img [src]="p.avatar_url || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80'" class="pa-avatar" />
+            <div>
+              <div class="pa-tags">
+                <span class="badge-pill" [ngClass]="p.status">{{ getProviderStatusArabic(p.status) }}</span>
+                <span class="type-tag">{{ p.type === 'center' ? 'مركز تجميل شريك' : 'أخصائية فريلانسر' }}</span>
+              </div>
+              <h4 class="pa-name">{{ p.display_name }}</h4>
+              <span class="pa-city"><i class="fa-solid fa-location-dot"></i> {{ p.city }} <ng-container *ngIf="p.phone">• {{ p.phone }}</ng-container></span>
+            </div>
+          </div>
+
+          <p class="pa-bio" *ngIf="p.bio">{{ p.bio }}</p>
+          <p class="pa-address text-muted" *ngIf="p.address_line"><i class="fa-solid fa-map-pin"></i> {{ p.address_line }}</p>
+
+          <div class="pa-specialties" *ngIf="p.specialties && p.specialties.length > 0">
+            <span class="sp-chip" *ngFor="let s of p.specialties">{{ s }}</span>
+          </div>
+
+          <!-- Quick Decision Actions -->
+          <div class="pa-admin-actions">
+            <div class="pending-approval-box" *ngIf="p.status === 'pending'">
+              <button (click)="approveProvider(p.id)" class="btn-primary btn-micro">
+                <i class="fa-solid fa-check"></i>
+                {{ p.type === 'center' ? 'اعتماد وتفعيل المركز الشريك فوراً' : 'اعتماد وتفعيل الأخصائية فوراً' }}
+              </button>
+              <button (click)="rejectProvider(p.id)" class="btn-outline btn-micro text-danger">
+                <i class="fa-solid fa-xmark"></i> رفض الطلب
+              </button>
+            </div>
+
+            <div class="status-changer" *ngIf="p.status !== 'pending'">
+              <label>تعديل الحالة:</label>
+              <select [ngModel]="p.status" (ngModelChange)="updateProviderStatus(p.id, $event)" class="status-select">
+                <option value="verified">معتمد ونشط ✓</option>
+                <option value="trusted">موثوق مميز ★</option>
+                <option value="pending">قيد المراجعة والتدقيق</option>
+                <option value="suspended">موقوف مؤقتاً</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: PRODUCTS MANAGEMENT (المنتجات والمخزون ومتابعة المبيعات) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'products'">
+      <div class="panel-header">
+        <div>
+          <h3>إدارة المنتجات، الأسعار، ومتابعة معدل الطلب</h3>
+          <p class="panel-subtitle text-muted">أضيفي منتجات جديدة، عدلي الأسعار والمخزون بضغطة زر، وتابعي الأكثر طلباً</p>
+        </div>
+
+        <div class="header-tools">
+          <div class="search-category-row">
+            <input
+              type="text"
+              placeholder="ابحثي بالاسم أو الماركة أو SKU..."
+              [(ngModel)]="productSearch"
+              class="table-search-input"
+            />
+
+            <select [(ngModel)]="selectedCategoryFilter" class="category-select">
+              <option value="all">جميع الأقسام</option>
+              <option *ngFor="let cat of productsService.categories()" [value]="cat.id">
+                {{ cat.name }}
+              </option>
+            </select>
+          </div>
+
+          <button (click)="openNewProductModal()" class="btn-primary btn-sm">
+            <i class="fa-solid fa-plus"></i> إضافة منتج جديد
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>المنتج</th>
+              <th>القسم</th>
+              <th>السعر الحالي</th>
+              <th>المخزون الحالي</th>
+              <th>مرات الطلب</th>
+              <th>التقييم</th>
+              <th>حالة العرض</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let prod of getAdminFilteredProducts()">
+              <td>
+                <div class="table-product-cell">
+                  <img [src]="prod.main_image" [alt]="prod.name" class="t-thumb" />
+                  <div>
+                    <strong>{{ prod.name }}</strong>
+                    <small class="text-muted d-block">{{ prod.brand }} • {{ prod.sku }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>{{ prod.category?.name || 'عام' }}</td>
+              <td>
+                <!-- Inline Price Editor -->
+                <div *ngIf="editingPriceProductId === prod.id" class="inline-price-box">
+                  <input type="number" [(ngModel)]="inlinePriceValue" class="input-micro" />
+                  <button (click)="saveInlinePrice(prod)" class="btn-micro btn-primary">حفظ</button>
+                  <button (click)="cancelEditPrice()" class="btn-micro btn-outline">إلغاء</button>
+                </div>
+                <div *ngIf="editingPriceProductId !== prod.id" class="price-display-box" (click)="startEditPrice(prod)" title="اضغطي للتعديل السريع">
+                  <strong class="text-primary">{{ prod.discount_price ?? prod.price }} ج.م</strong>
+                  <small *ngIf="prod.discount_price" class="text-strike">{{ prod.price }} ج.م</small>
+                  <i class="fa-solid fa-pencil text-muted quick-edit-icon"></i>
+                </div>
+              </td>
+              <td>
+                <div class="stock-control-box">
+                  <button (click)="quickUpdateStock(prod, -1)" class="stock-btn" title="إنقاص">-</button>
+                  <span class="stock-pill" [class.danger]="prod.stock_quantity <= 5">
+                    {{ prod.stock_quantity }} قطع
+                  </span>
+                  <button (click)="quickUpdateStock(prod, 5)" class="stock-btn" title="إضافة 5 قطع">+</button>
+                </div>
+              </td>
+              <td>
+                <span class="order-demand-pill">
+                  <i class="fa-solid fa-basket-shopping"></i> {{ getProductOrderCount(prod.id) }} طلبات
+                </span>
+              </td>
+              <td><span class="rating-badge">★ {{ prod.rating_avg }}</span></td>
+              <td>
+                <button
+                  (click)="toggleProductActive(prod)"
+                  class="toggle-active-btn"
+                  [class.active]="prod.is_active"
+                >
+                  <i class="fa-solid" [ngClass]="prod.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                  <span>{{ prod.is_active ? 'مفعّل' : 'معطّل' }}</span>
+                </button>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button (click)="openEditProductModal(prod)" class="action-icon edit" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button (click)="deleteProduct(prod.id)" class="action-icon delete" title="حذف"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 6: CENTERS & REFERRALS (المراكز الشريكة وأكواد الإحالة) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'centers_referrals'">
+      <div class="panel-header">
+        <div>
+          <h3>المراكز الشريكة المعتمدة وأكواد الخصم وتتبع الوافدين</h3>
+          <p class="panel-subtitle text-muted">تابعي عدد العميلات اللاتي وصلن للمراكز عن طريق كود المنصة وقيمة العمولات المستحقة</p>
+        </div>
+      </div>
+
+      <!-- Centers Cards Grid -->
+      <h4 class="sub-table-title"><i class="fa-solid fa-store"></i> شبكة الصالونات والمراكز الشريكة المفعلة</h4>
+      <div class="centers-admin-cards-grid">
+        <div class="center-admin-card" *ngFor="let c of centersService.centers()">
+          <div class="ca-top">
+            <img [src]="c.avatar_url" class="ca-avatar" />
+            <div>
+              <h4 class="ca-title">{{ c.display_name }}</h4>
+              <span class="ca-city"><i class="fa-solid fa-location-dot"></i> {{ c.city }}</span>
+              <div class="ca-rating">★ {{ c.rating_avg }} ({{ c.rating_count }} تقييم موثق)</div>
+            </div>
+          </div>
+          <div class="ca-code-box" *ngIf="c.referral_code">
+            <span>كود الخصم المعتمد: <strong>{{ c.referral_code.code }}</strong></span>
+            <span>نسبة عمولة المنصة: <strong>{{ c.referral_code.commission_rate }}%</strong></span>
+          </div>
+          <div class="ca-footer">
+            <span>{{ c.center_services?.length || 0 }} خدمات مدرجة</span>
+            <span class="badge-pill active">شريك نشط ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Redemptions Ledger Table -->
+      <h4 class="sub-table-title mt-4"><i class="fa-solid fa-receipt"></i> سجل استخدام أكواد الخصم والعمولات للمراكز</h4>
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>رقم الإحالة</th>
+              <th>المركز الشريك</th>
+              <th>العميلة</th>
+              <th>الكود المستخدم</th>
+              <th>قيمة الفاتورة المقدرة</th>
+              <th>عمولة المنصة</th>
+              <th>الحالة</th>
+              <th>تسوية العمولة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rdm of referralsService.redemptions()">
+              <td><strong>#{{ rdm.id }}</strong></td>
+              <td>
+                <strong>{{ rdm.provider?.display_name }}</strong>
+                <small class="d-block text-muted">{{ rdm.provider?.city }}</small>
+              </td>
+              <td>{{ rdm.user?.full_name || 'سارة أحمد' }}</td>
+              <td><span class="code-pill">{{ rdm.referral_code?.code }}</span></td>
+              <td>
+                <strong *ngIf="rdm.estimated_value">{{ rdm.estimated_value }} ج.م</strong>
+                <span *ngIf="!rdm.estimated_value" class="text-muted">قيد المراجعة</span>
+              </td>
+              <td>
+                <strong *ngIf="rdm.commission_amount" class="text-primary">{{ rdm.commission_amount }} ج.م</strong>
+                <span *ngIf="!rdm.commission_amount" class="text-muted">—</span>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + rdm.status">
+                  {{ getRedemptionStatusArabic(rdm.status) }}
+                </span>
+              </td>
+              <td>
+                <button
+                  *ngIf="rdm.status === 'confirmed_by_center'"
+                  (click)="markPaidOut(rdm.id)"
+                  class="btn-primary btn-micro"
+                  title="تسجيل تحصيل وتوريد العمولة"
+                >
+                  <i class="fa-solid fa-circle-check"></i> تسجيل التحصيل
+                </button>
+                <span *ngIf="rdm.status === 'paid_out'" class="text-success text-xs">تم التحصيل ✓</span>
+                <span *ngIf="rdm.status === 'claimed'" class="text-muted text-xs">بانتظار تأكيد المركز</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 7: PROMOTIONAL BANNERS (البانرات الترويجية) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'banners'">
+      <div class="panel-header">
+        <div>
+          <h3>البانرات الترويجية والإعلانية للمتجر والمراكز الشريكة</h3>
+          <p class="panel-subtitle text-muted">أضيفي إعلانات مميزة للمتجر، أو اربطي البانر بمركز تجميل معتمد أو كود خصم</p>
+        </div>
+
+        <button (click)="openNewBannerModal()" class="btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i> إضافة بانر جديد
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>صورة البانر</th>
+              <th>العنوان والنص الترويجي</th>
+              <th>نوع البانر والربط</th>
+              <th>الجهة / الكوبون المرتبط</th>
+              <th>الترتيب</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of bannersService.banners()">
+              <td>
+                <img [src]="b.image_storage_path" [alt]="b.title" class="banner-thumb" />
+              </td>
+              <td>
+                <strong>{{ b.title }}</strong>
+                <small class="d-block text-muted" *ngIf="b.subtitle">{{ b.subtitle }}</small>
+                <small class="d-block text-primary mt-1" *ngIf="b.cta_text">زر الـ CTA: "{{ b.cta_text }}" ({{ b.cta_link }})</small>
+              </td>
+              <td>
+                <span class="status-pill" [class.active]="b.type === 'coupon'" [class.disabled]="b.type === 'announcement'" [class.status-paid_out]="b.type === 'center'">
+                  {{ b.type === 'coupon' ? 'كوبون خصم' : (b.type === 'center' ? 'إعلان مركز تجميل' : 'إعلان / خبر') }}
+                </span>
+              </td>
+              <td>
+                <span class="code-pill" *ngIf="b.type === 'coupon' && b.coupon">
+                  كود {{ b.coupon.code }} ({{ b.coupon.value }}%)
+                </span>
+                <span class="center-linked-badge" *ngIf="b.type === 'center'">
+                  <i class="fa-solid fa-store"></i> {{ getBannerCenterName(b.center_id) }}
+                </span>
+                <span *ngIf="b.type === 'announcement'" class="text-muted">—</span>
+              </td>
+              <td><strong>#{{ b.sort_order }}</strong></td>
+              <td>
+                <button
+                  (click)="bannersService.toggleBannerActive(b.id)"
+                  class="toggle-active-btn"
+                  [class.active]="b.is_active"
+                >
+                  <i class="fa-solid" [ngClass]="b.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                  <span>{{ b.is_active ? 'مفعّل' : 'معطّل' }}</span>
+                </button>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button (click)="openEditBannerModal(b)" class="action-icon edit" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button (click)="deleteBanner(b.id)" class="action-icon delete" title="حذف"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 8: PAYMENT PROOFS (إثباتات الدفع) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'payments'">
+      <div class="panel-header">
+        <div>
+          <h3>طابور مراجعة واعتماد إيصالات الدفع (InstaPay / فودافون كاش / بنكي)</h3>
+          <p class="panel-subtitle text-muted">فحص الإيصالات المرفوعة وتأكيد سداد الطلبات والجلسات بنقرة واحدة</p>
+        </div>
+        <div class="payment-filters">
+          <span class="badge-pill active">{{ paymentProofsService.pendingProofs().length }} إيصال قيد المراجعة</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>المعاملة</th>
+              <th>العميلة</th>
+              <th>قناة التحويل</th>
+              <th>اسم صاحب الحساب</th>
+              <th>المبلغ المطالب به</th>
+              <th>صورة الإيصال</th>
+              <th>الحالة</th>
+              <th>الإجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let prf of paymentProofsService.proofs()">
+              <td>
+                <strong *ngIf="prf.reference_type === 'order'">طلب متجر #{{ prf.reference_id }}</strong>
+                <strong *ngIf="prf.reference_type === 'booking'">جلسة منزلية #{{ prf.reference_id }}</strong>
+                <small class="d-block text-muted">{{ prf.created_at | date:'medium' }}</small>
+              </td>
+              <td>
+                <strong>{{ prf.user?.full_name || 'سارة أحمد' }}</strong>
+                <small class="d-block text-muted">{{ prf.user?.phone || '01123456789' }}</small>
+              </td>
+              <td>
+                <span class="channel-chip" [ngClass]="prf.channel">
+                  <i class="fa-solid" [ngClass]="prf.channel === 'instapay' ? 'fa-bolt' : (prf.channel === 'vodafone_cash' ? 'fa-mobile-screen-button' : 'fa-building-columns')"></i>
+                  {{ getChannelLabel(prf.channel) }}
+                </span>
+              </td>
+              <td><strong>{{ prf.sender_name || '—' }}</strong></td>
+              <td><strong class="text-primary price-lead">{{ prf.amount_claimed }} ج.م</strong></td>
+              <td>
+                <div class="receipt-thumb-wrap" (click)="openPreviewReceipt(prf.receipt_storage_path)" title="اضغطي للتكبير">
+                  <img [src]="prf.receipt_storage_path" alt="إيصال التحويل" class="banner-thumb" />
+                  <span class="thumb-zoom-icon"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+                </div>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + prf.status">
+                  {{ getProofStatusArabic(prf.status) }}
+                </span>
+                <small class="d-block text-danger mt-1" *ngIf="prf.status === 'rejected' && prf.admin_note">
+                  السبب: {{ prf.admin_note }}
+                </small>
+              </td>
+              <td>
+                <div class="row-actions" *ngIf="prf.status === 'pending_review'">
+                  <button (click)="approvePayment(prf.id)" class="btn-primary btn-micro" title="اعتماد وتأكيد الدفع">
+                    <i class="fa-solid fa-check"></i> اعتماد
+                  </button>
+                  <button (click)="openRejectModal(prf)" class="btn-outline btn-micro text-danger" title="رفض الإيصال">
+                    <i class="fa-solid fa-xmark"></i> رفض
+                  </button>
+                </div>
+                <span *ngIf="prf.status === 'approved'" class="text-success text-xs"><i class="fa-solid fa-circle-check"></i> تم الاعتماد</span>
+                <span *ngIf="prf.status === 'rejected'" class="text-muted text-xs"><i class="fa-solid fa-circle-xmark text-danger"></i> تم الرفض</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 9: COUPONS (الكوبونات والعروض) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'coupons'">
+      <div class="panel-header">
+        <div>
+          <h3>كوبونات الخصم والعروض الترويجية</h3>
+          <p class="panel-subtitle text-muted">إدارة أكواد الخصم والحد الأدنى للطلبات ومتابعة نسب الاستخدام</p>
+        </div>
+      </div>
+
+      <div class="coupons-grid">
+        <div class="coupon-card" *ngFor="let coup of couponsList">
+          <div class="c-code-row">
+            <span class="c-code">{{ coup.code }}</span>
+            <span class="c-val">{{ coup.discount_type === 'percentage' ? coup.value + '%' : coup.value + ' ج.م' }} خصم</span>
+          </div>
+          <p class="c-terms">الحد الأدنى للطلب: <strong>{{ coup.min_order_amount }} ج.م</strong></p>
+          <div class="c-footer">
+            <span>مرات الاستخدام: {{ coup.times_used }}</span>
+            <span class="status-pill active">ساري ✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- MODALS -->
+  <!-- =================================================================== -->
+
+  <!-- Add/Edit Product Modal Dialog -->
+  <div class="modal-backdrop" *ngIf="isModalOpen" (click)="closeModal()"></div>
+  <div class="modal-content beauty-card modal-dialog-box" *ngIf="isModalOpen">
+    <div class="modal-header">
+      <h3>{{ editingProduct?.id ? 'تعديل بيانات المنتج' : 'إضافة منتج عناية جديد' }}</h3>
+      <button (click)="closeModal()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>اسم المنتج بالعربي <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="formProduct.name" class="input-custom" placeholder="مثال: سيروم الأرجان والكيراتين" />
+        </div>
+
+        <div class="form-group">
+          <label>الماركة / Brand</label>
+          <input type="text" [(ngModel)]="formProduct.brand" class="input-custom" placeholder="مثال: RoseÉlixir Botanicals" />
+        </div>
+
+        <div class="form-group">
+          <label>القسم</label>
+          <select [(ngModel)]="formProduct.category_id" class="input-custom">
+            <option *ngFor="let cat of productsService.categories()" [value]="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>السعر الأساسي (ج.م) <span class="req">*</span></label>
+          <input type="number" [(ngModel)]="formProduct.price" class="input-custom" />
+        </div>
+
+        <div class="form-group">
+          <label>سعر الخصم الترويجي (اختياري)</label>
+          <input type="number" [(ngModel)]="formProduct.discount_price" class="input-custom" placeholder="اتركيه فارغاً إذا لا يوجد خصم" />
+        </div>
+
+        <div class="form-group">
+          <label>كمية المخزون <span class="req">*</span></label>
+          <input type="number" [(ngModel)]="formProduct.stock_quantity" class="input-custom" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>رابط صورة المنتج (Image URL) <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="formProduct.main_image" class="input-custom" dir="ltr" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>وصف المنتج وطريقة الاستخدام</label>
+          <textarea [(ngModel)]="formProduct.description" class="input-custom" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeModal()" class="btn-outline">إلغاء</button>
+      <button (click)="saveProduct()" class="btn-primary">حفظ المنتج</button>
+    </div>
+  </div>
+
+  <!-- Add/Edit Promotional Banner Modal Dialog -->
+  <div class="modal-backdrop" *ngIf="isBannerModalOpen" (click)="closeBannerModal()"></div>
+  <div class="modal-content beauty-card modal-dialog-box" *ngIf="isBannerModalOpen">
+    <div class="modal-header">
+      <h3>{{ editingBanner?.id ? 'تعديل البانر الترويجي' : 'إضافة بانر ترويجي جديد' }}</h3>
+      <button (click)="closeBannerModal()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>نوع البانر والربط <span class="req">*</span></label>
+          <select [(ngModel)]="formBanner.type" (ngModelChange)="onBannerTypeChange()" class="input-custom">
+            <option value="coupon">بانر كود خصم للمتجر (Coupon Banner)</option>
+            <option value="center">بانر إعلاني لمركز تجميل شريك (Partner Center)</option>
+            <option value="announcement">بانر إعلاني / إخباري عام (Announcement)</option>
+          </select>
+        </div>
+
+        <!-- Center selector if center type -->
+        <div class="form-group full-width" *ngIf="formBanner.type === 'center'">
+          <label>اختاري المركز الشريك المرتبط بالإعلان <span class="req">*</span></label>
+          <select [(ngModel)]="formBanner.center_id" (ngModelChange)="onBannerCenterSelect($event)" class="input-custom">
+            <option *ngFor="let c of centersService.centers()" [value]="c.id">
+              {{ c.display_name }} ({{ c.city }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Coupon selector if coupon type -->
+        <div class="form-group full-width" *ngIf="formBanner.type === 'coupon'">
+          <label>اختاري كوبون الخصم المرتبط <span class="req">*</span></label>
+          <select [(ngModel)]="formBanner.coupon_id" class="input-custom">
+            <option *ngFor="let coup of couponsList" [value]="coup.id">
+              كود {{ coup.code }} (خصم {{ coup.value }}{{ coup.discount_type === 'percentage' ? '%' : ' ج.م' }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label>عنوان البانر الرئيسي <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="formBanner.title" class="input-custom" placeholder="مثال: خصومات حصرية على جميع جلسات الشعر والبروتين" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>النص الفرعي للبانر</label>
+          <input type="text" [(ngModel)]="formBanner.subtitle" class="input-custom" placeholder="مثال: احجزي جلستكِ الآن واستمتعي بخصم 15%" />
+        </div>
+
+        <div class="form-group">
+          <label>نص زر الدعوة للإجراء (CTA Text)</label>
+          <input type="text" [(ngModel)]="formBanner.cta_text" class="input-custom" placeholder="مثال: احجزي بالصالون الآن" />
+        </div>
+
+        <div class="form-group">
+          <label>الترتيب في السلايدر</label>
+          <input type="number" [(ngModel)]="formBanner.sort_order" class="input-custom" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>رابط صورة البانر (High-Res Image URL) <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="formBanner.image_storage_path" class="input-custom" dir="ltr" />
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeBannerModal()" class="btn-outline">إلغاء</button>
+      <button (click)="saveBanner()" class="btn-primary">حفظ البانر</button>
+    </div>
+  </div>
+
+  <!-- Receipt Image Zoom Preview Modal -->
+  <div class="modal-backdrop" *ngIf="previewReceiptUrl" (click)="closePreviewReceipt()"></div>
+  <div class="modal-content receipt-zoom-modal beauty-card modal-dialog-box" *ngIf="previewReceiptUrl">
+    <div class="modal-header">
+      <h3>معاينة إيصال التحويل البنكي / المحفظة</h3>
+      <button (click)="closePreviewReceipt()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body text-center">
+      <img [src]="previewReceiptUrl" alt="إيصال التحويل" class="full-receipt-img" />
+    </div>
+  </div>
+
+  <!-- Payment Reject Modal -->
+  <div class="modal-backdrop" *ngIf="rejectingProof" (click)="closeRejectModal()"></div>
+  <div class="modal-content beauty-card modal-dialog-box" *ngIf="rejectingProof">
+    <div class="modal-header">
+      <h3 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> تأكيد رفض إيصال التحويل</h3>
+      <button (click)="closeRejectModal()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="text-muted mb-3">يرجى كتابة سبب رفض الإيصال ليظهر للعميلة في حسابها مع إمكانية رفع إيصال جديد:</p>
+      <div class="form-group">
+        <label>سبب الرفض <span class="req">*</span></label>
+        <textarea [(ngModel)]="rejectReason" class="input-custom" rows="3" placeholder="مثال: المبلغ المحول غير مطابق لقيمة الفاتورة، أو رقم المعاملة غير واضح."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button (click)="closeRejectModal()" class="btn-outline">إلغاء</button>
+      <button (click)="confirmReject()" class="btn-primary" style="background: #DC2626; border-color: #DC2626;">تأكيد الرفض</button>
+    </div>
+  </div>
+
+</div>

@@ -120,6 +120,33 @@ export class CentersService {
 
   // Center Portal: Add or Update Center Service
   async saveCenterService(providerId: string, service: Partial<CenterService>): Promise<void> {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        if (service.id) {
+          await client.from('center_services').update({
+            service_name: service.service_name,
+            description: service.description,
+            price_from: Number(service.price_from),
+            price_to: Number(service.price_to),
+            category: service.category
+          }).eq('id', service.id);
+        } else {
+          await client.from('center_services').insert([{
+            provider_id: providerId,
+            service_name: service.service_name || 'خدمة جديدة',
+            description: service.description || '',
+            price_from: Number(service.price_from) || 500,
+            price_to: Number(service.price_to) || 1000,
+            category: service.category || 'hair',
+            is_active: true
+          }]);
+        }
+      } catch (err) {
+        console.warn('Supabase center_services fallback:', err);
+      }
+    }
+
     this._centers.update(list =>
       list.map(c => {
         if (c.id === providerId) {
@@ -150,6 +177,15 @@ export class CentersService {
   }
 
   async deleteCenterService(providerId: string, serviceId: string): Promise<void> {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('center_services').delete().eq('id', serviceId);
+      } catch (err) {
+        console.warn('Supabase delete center_services fallback:', err);
+      }
+    }
+
     this._centers.update(list =>
       list.map(c => {
         if (c.id === providerId && c.center_services) {

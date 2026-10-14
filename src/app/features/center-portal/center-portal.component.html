@@ -1,0 +1,572 @@
+<div class="portal-standalone-wrapper">
+
+  <!-- Mobile Top Bar with Burger Button -->
+  <header class="portal-mobile-topbar show-on-mobile">
+    <div class="mobile-topbar-brand">
+      <div class="brand-symbol-mini">
+        <i class="fa-solid fa-feather-pointed"></i>
+      </div>
+      <div class="mobile-brand-meta">
+        <strong class="mobile-brand-title">BEAUTY</strong>
+        <span class="mobile-brand-subtitle">بوابة المركز الشريك</span>
+      </div>
+    </div>
+
+    <div class="mobile-topbar-actions">
+      <a routerLink="/" target="_blank" class="mobile-action-btn" title="معاينة المتجر للعملاء">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </a>
+      <button class="burger-menu-btn" (click)="toggleMobileSidebar()" [attr.aria-expanded]="isMobileSidebarOpen" title="القائمة الرئيسية">
+        <i class="fa-solid" [ngClass]="isMobileSidebarOpen ? 'fa-xmark' : 'fa-bars-staggered'"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Backdrop -->
+  <div
+    class="sidebar-backdrop show-on-mobile"
+    *ngIf="isMobileSidebarOpen"
+    (click)="closeMobileSidebar()"
+  ></div>
+
+  <!-- =================================================================== -->
+  <!-- RIGHT SIDEBAR (سايد بار المركز الشريك على اليمين) -->
+  <!-- =================================================================== -->
+  <aside class="portal-sidebar" [class.mobile-open]="isMobileSidebarOpen">
+
+    <!-- Mobile Drawer Close Header -->
+    <div class="sidebar-mobile-close-bar show-on-mobile">
+      <span class="close-bar-title"><i class="fa-solid fa-store text-primary"></i> بوابة المركز الشريك</span>
+      <button class="close-sidebar-btn" (click)="closeMobileSidebar()" title="إغلاق القائمة">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Sidebar Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-symbol">
+        <i class="fa-solid fa-store"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">BEAUTY</span>
+        <span class="brand-badge">بوابة المراكز والصالونات الشريكة</span>
+      </div>
+    </div>
+
+    <!-- Center Profile Card -->
+    <div class="center-profile-card">
+      <div class="center-avatar">
+        <img
+          [src]="centersService.currentCenter()?.avatar_url || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80'"
+          [alt]="centersService.currentCenter()?.display_name"
+        />
+        <span class="online-indicator" title="مركز نشط"></span>
+      </div>
+      <div class="center-details">
+        <strong class="center-name">{{ centersService.currentCenter()?.display_name || 'مركز التجميل الشريك' }}</strong>
+        <span class="center-role">
+          <i class="fa-solid fa-circle-check text-success"></i> شريك معتمد رسمي
+        </span>
+        <div class="center-meta-text">
+          <i class="fa-solid fa-location-dot"></i> {{ centersService.currentCenter()?.city || 'التجمع الخامس' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Code Badge Card -->
+    <div class="referral-code-card">
+      <div class="rc-label">كود خصم المركز للعميلات:</div>
+      <div class="rc-code-box">
+        <span class="rc-code">{{ centersService.currentCenter()?.referral_code?.code || 'LETOILE15' }}</span>
+        <span class="rc-discount">خصم 15%</span>
+      </div>
+      <small class="rc-sub">عمولة المنصة من الإحالة: {{ centersService.currentCenter()?.referral_code?.commission_rate || 10 }}%</small>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">إدارة الصالون والوافدات</span>
+
+      <!-- 1. Overview -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'overview'"
+        (click)="setTab('overview')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-gauge-high icon"></i>
+          <span>نظرة عامة والوافدات</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="getPendingClaimsCount() > 0">
+          {{ getPendingClaimsCount() }}
+        </span>
+      </button>
+
+      <!-- 2. Client Claims / Redemptions -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'redemptions'"
+        (click)="setTab('redemptions')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-ticket icon"></i>
+          <span>الإحالات وتأكيد الأكواد</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="getPendingClaimsCount() > 0">
+          {{ getPendingClaimsCount() }}
+        </span>
+      </button>
+
+      <!-- 3. Services & Price Menu -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'services'"
+        (click)="setTab('services')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-list-check icon"></i>
+          <span>قائمة خدمات وأسعار الصالون</span>
+        </div>
+        <span class="counter-badge neutral">{{ centersService.currentCenter()?.center_services?.length || 0 }}</span>
+      </button>
+
+      <!-- 4. Finances & Commissions -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'finances'"
+        (click)="setTab('finances')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-wallet icon"></i>
+          <span>العمولات والمستحقات</span>
+        </div>
+      </button>
+
+      <!-- 5. Center Info & Working Hours -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'info'"
+        (click)="setTab('info')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-store icon"></i>
+          <span>بيانات المركز وساعات العمل</span>
+        </div>
+      </button>
+    </nav>
+
+    <!-- Sidebar Bottom Actions -->
+    <div class="sidebar-bottom-actions">
+      <a routerLink="/" target="_blank" class="sidebar-btn-store" title="معاينة المتجر للعملاء في نافذة جديدة">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        <span>معاينة المتجر للعملاء</span>
+      </a>
+
+      <button (click)="auth.signOut()" class="sidebar-btn-logout">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- =================================================================== -->
+  <!-- MAIN WORKSPACE CONTENT (مساحة العمل للمركز) -->
+  <!-- =================================================================== -->
+  <main class="portal-main-area">
+
+    <!-- Workspace Top Header (يظهر في قسم النظرة العامة) -->
+    <header class="workspace-header animate-fade-in" *ngIf="activeTab === 'overview'">
+      <div class="workspace-title-box">
+        <div class="breadcrumb-tag">
+          <i class="fa-solid fa-store"></i>
+          <span>بوابة المراكز الشريكة</span>
+          <i class="fa-solid fa-chevron-left divider-icon"></i>
+          <span class="active-crumb">لوحة التحكم وتتبع الزائرات</span>
+        </div>
+        <h2 class="current-section-title">{{ centersService.currentCenter()?.display_name || 'مركز التجميل' }} ✨</h2>
+      </div>
+
+      <div class="workspace-quick-actions">
+        <button (click)="openAddServiceModal()" class="btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i>
+          <span>إضافة خدمة للصالون</span>
+        </button>
+
+        <button (click)="activeTab = 'redemptions'" class="btn-outline btn-sm">
+          <i class="fa-solid fa-ticket"></i>
+          <span>تأكيد كود عميلة</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: OVERVIEW (نظرة عامة والوافدات) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper animate-fade-in" *ngIf="activeTab === 'overview'">
+
+      <!-- Center KPI Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card beauty-card">
+          <div class="metric-icon orders"><i class="fa-solid fa-ticket"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">إجمالي الوافدات بكود الخصم</span>
+            <span class="metric-val">{{ referralsService.myCenterRedemptions().length }}</span>
+            <span class="metric-sub text-muted">عميلات وصلن عبر المنصة</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon money"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">مبيعات المركز المؤكدة</span>
+            <span class="metric-val">{{ getConfirmedRevenue() | number:'1.0-0' }} <small>ج.م</small></span>
+            <span class="metric-sub text-success">إيرادات محققة في الصالون</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon commission"><i class="fa-solid fa-receipt"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">عمولات المنصة المستحقة</span>
+            <span class="metric-val">{{ getTotalCommissionsOwed() | number:'1.0-0' }} <small>ج.م</small></span>
+            <span class="metric-sub text-primary">نسبة 10% من إجمالي الفاتورة</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon services"><i class="fa-solid fa-spa"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">الخدمات المعروضة بالدليل</span>
+            <span class="metric-val">{{ centersService.currentCenter()?.center_services?.length || 4 }}</span>
+            <span class="metric-sub text-success">تظهر لآلاف العميلات يومياً</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Feed: Urgent Client Walk-ins -->
+      <div class="urgent-action-box beauty-card" *ngIf="getPendingClaimsCount() > 0">
+        <div class="u-header">
+          <div class="u-title">
+            <span class="pulse-indicator"></span>
+            <strong>عميلات وصلن الصالون ومعهن كود الخصم (بانتظار تأكيدكِ)</strong>
+          </div>
+          <button (click)="activeTab = 'redemptions'" class="btn-micro btn-primary">عرض الكل وتأكيد الفاتورة</button>
+        </div>
+
+        <div class="claims-list-mini">
+          <div class="claim-mini-item" *ngFor="let item of getPendingClaims().slice(0, 3)">
+            <div class="ci-user">
+              <strong>{{ item.user?.full_name || 'سارة أحمد' }}</strong>
+              <small dir="ltr">{{ item.user?.phone || '01123456789' }}</small>
+            </div>
+            <span class="code-pill">{{ item.referral_code?.code || 'LETOILE15' }}</span>
+            <button (click)="openConfirmModal(item)" class="feed-action-btn urgent btn-sm">
+              <i class="fa-solid fa-check"></i>
+              <span>تأكيد الحضور وإدخال الفاتورة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: REDEMPTIONS (الإحالات وتأكيد الأكواد) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'redemptions'">
+      <div class="panel-header">
+        <div>
+          <h3>الأكواد والإحالات الواردة من عميلات المنصة</h3>
+          <p class="panel-subtitle text-muted">قومي بتأكيد حضور العميلة في الصالون وإدخال قيمة الفاتورة لاحتساب الخصم والعمولة</p>
+        </div>
+
+        <div class="filter-pills">
+          <button class="badge-pill warning" [class.active]="redemptionFilter === 'pending'" (click)="redemptionFilter = 'pending'">
+            بانتظار التأكيد ({{ getPendingClaimsCount() }})
+          </button>
+          <button class="badge-pill success" [class.active]="redemptionFilter === 'confirmed'" (click)="redemptionFilter = 'confirmed'">
+            زيارات مؤكدة ومكتملة ({{ getConfirmedCount() }})
+          </button>
+          <button class="badge-pill" [class.active]="redemptionFilter === 'all'" (click)="redemptionFilter = 'all'">
+            الكل ({{ referralsService.myCenterRedemptions().length }})
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-box" *ngIf="getFilteredRedemptions().length === 0">
+        <i class="fa-solid fa-ticket-simple empty-icon"></i>
+        <h4>لا توجد إحالات في هذا القسم حالياً</h4>
+        <p class="text-muted">ستظهر هنا أي عميلة تزور الصالون وتبرز كود الخصم المعتمد لتأكيد فاتورتها فوراً.</p>
+      </div>
+
+      <!-- Redemptions Table -->
+      <div class="table-responsive" *ngIf="getFilteredRedemptions().length > 0">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>العميلة ورقم الهاتف</th>
+              <th>الكود المستخدم</th>
+              <th>تاريخ الزيارة</th>
+              <th>قيمة الفاتورة المحصلة</th>
+              <th>عمولة المنصة (10%)</th>
+              <th>الحالة</th>
+              <th>إجراءات التأكيد</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getFilteredRedemptions()" [class.highlight-pending]="item.status === 'claimed'">
+              <td>
+                <strong>{{ item.user?.full_name || 'سارة أحمد' }}</strong>
+                <small class="d-block text-muted" dir="ltr">{{ item.user?.phone || '01123456789' }}</small>
+              </td>
+              <td>
+                <span class="code-pill">{{ item.referral_code?.code || 'LETOILE15' }}</span>
+              </td>
+              <td>{{ item.claimed_at | date:'yyyy/MM/dd - hh:mm a' }}</td>
+              <td>
+                <strong *ngIf="item.estimated_value">{{ item.estimated_value }} ج.م</strong>
+                <span *ngIf="!item.estimated_value" class="text-muted">بانتظار تحديد الفاتورة</span>
+              </td>
+              <td>
+                <strong *ngIf="item.commission_amount" class="text-primary">{{ item.commission_amount }} ج.م</strong>
+                <span *ngIf="!item.commission_amount" class="text-muted">—</span>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + item.status">
+                  {{ getStatusArabic(item.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="btn-group" *ngIf="item.status === 'claimed'">
+                  <button (click)="openConfirmModal(item)" class="btn-primary btn-micro">
+                    <i class="fa-solid fa-circle-check"></i> تأكيد الحضور والفاتورة
+                  </button>
+                  <button (click)="rejectClaim(item.id)" class="btn-outline btn-micro text-danger">
+                    <i class="fa-solid fa-xmark"></i> رفض
+                  </button>
+                </div>
+                <span *ngIf="item.status !== 'claimed'" class="text-success text-xs font-weight-bold">
+                  تم التوثيق والاعتماد ✓
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: SERVICES (قائمة خدمات وأسعار الصالون) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'services'">
+      <div class="panel-header">
+        <div>
+          <h3>إدارة باقات وخدمات وقائمة أسعار الصالون</h3>
+          <p class="panel-subtitle text-muted">تظهر هذه الخدمات في بروفايل المركز للعميلات اللاتي يبحثن عن صالونات قريبة</p>
+        </div>
+
+        <button (click)="openAddServiceModal()" class="btn-primary btn-sm">
+          <i class="fa-solid fa-plus"></i> إضافة خدمة جديدة
+        </button>
+      </div>
+
+      <div class="services-admin-grid">
+        <div class="service-admin-card beauty-card" *ngFor="let srv of centersService.currentCenter()?.center_services">
+          <div class="sac-top">
+            <span class="sac-cat-badge">{{ getCategoryArabic(srv.category) }}</span>
+            <div class="sac-actions">
+              <button (click)="openEditServiceModal(srv)" class="btn-icon-mini" title="تعديل"><i class="fa-solid fa-pen"></i></button>
+              <button (click)="deleteService(srv.id)" class="btn-icon-mini text-danger" title="حذف"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+
+          <h4 class="sac-title">{{ srv.service_name }}</h4>
+          <p class="sac-desc text-muted">{{ srv.description || 'خدمة متميزة بأيدي أمهر المتخصصات وباستخدام مستحضرات أصلية.' }}</p>
+
+          <div class="sac-price-box">
+            <span class="lbl">السعر المقدر:</span>
+            <strong>{{ srv.price_from }} - {{ srv.price_to }} ج.م</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: FINANCES (العمولات والمستحقات) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'finances'">
+      <div class="panel-header">
+        <div>
+          <h3>سجل العمولات والمستحقات المالية للمنصة</h3>
+          <p class="panel-subtitle text-muted">حسابات الإحالات ونسب العمولات المحققة من زيارات العميلات للصالون</p>
+        </div>
+
+        <span class="badge-pill active">نسبة العمولة الثابتة: 10%</span>
+      </div>
+
+      <div class="finances-summary-grid">
+        <div class="fin-card beauty-card">
+          <span class="fin-lbl">إجمالي مبيعات المركز من الإحالات:</span>
+          <strong class="fin-val text-success">{{ getConfirmedRevenue() }} ج.م</strong>
+          <small class="text-muted">مبيعات محققة في الصالون</small>
+        </div>
+
+        <div class="fin-card beauty-card">
+          <span class="fin-lbl">عمولات المنصة المستحقة للتسوية:</span>
+          <strong class="fin-val text-primary">{{ getTotalCommissionsOwed() }} ج.م</strong>
+          <small class="text-muted">يتم تسويتها شهرياً مع المنصة</small>
+        </div>
+      </div>
+
+      <h4 class="sub-table-title mt-4"><i class="fa-solid fa-file-invoice-dollar"></i> تفاصيل الفواتير المحققة</h4>
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>رقم الإحالة</th>
+              <th>العميلة</th>
+              <th>قيمة الفاتورة</th>
+              <th>نسبة المنصة</th>
+              <th>قيمة العمولة</th>
+              <th>حالة التسوية</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getConfirmedRedemptions()">
+              <td><strong>#{{ item.id }}</strong></td>
+              <td>{{ item.user?.full_name || 'سارة أحمد' }}</td>
+              <td><strong>{{ item.estimated_value }} ج.م</strong></td>
+              <td>10%</td>
+              <td class="text-primary"><strong>{{ item.commission_amount }} ج.م</strong></td>
+              <td>
+                <span class="badge-pill success">مؤكدة من الصالون ✓</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: CENTER INFO & WORKING HOURS (بيانات الصالون) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'info'">
+      <div class="panel-header">
+        <div>
+          <h3>بيانات المركز وساعات ومواعيد العمل الرسمية</h3>
+          <p class="panel-subtitle text-muted">تحديث ساعات العمل، الهاتف، والعنوان المعروض للعميلات في دليل المراكز</p>
+        </div>
+
+        <span class="badge-pill success">مركز معتمد في الدليل ✓</span>
+      </div>
+
+      <div class="center-info-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم الصالون التجاري</label>
+            <input type="text" [ngModel]="centersService.currentCenter()?.display_name" class="input-custom" />
+          </div>
+
+          <div class="form-group">
+            <label>رقم هاتف الإدارة / الحجز</label>
+            <input type="tel" [ngModel]="centersService.currentCenter()?.phone" class="input-custom" dir="ltr" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>العنوان بالتفصيل</label>
+            <input type="text" [ngModel]="centersService.currentCenter()?.address_line" class="input-custom" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>ساعات ومواعيد العمل الرسمية</label>
+            <input type="text" [ngModel]="centersService.currentCenter()?.opening_hours || 'يومياً من 11 ص حتى 10 م'" class="input-custom" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>نبذة عن المركز والأقسام المتوفرة</label>
+            <textarea [ngModel]="centersService.currentCenter()?.bio" class="input-custom" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <span *ngIf="isSavedNotice" class="text-success font-weight-bold">تم حفظ وتحديث بيانات المركز بنجاح ✓</span>
+          <button (click)="saveInfoNotice()" class="btn-primary">حفظ بيانات المركز</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal 1: Confirm Referral Walk-in Claim -->
+  <div class="modal-backdrop" *ngIf="isConfirmModalOpen" (click)="isConfirmModalOpen = false"></div>
+  <div class="modal-content beauty-card modal-dialog-box" *ngIf="isConfirmModalOpen">
+    <div class="modal-header">
+      <h3>تأكيد زيارة العميلة وإدخال قيمة الفاتورة</h3>
+      <button (click)="isConfirmModalOpen = false" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="client-summary-box mb-3">
+        <strong>العميلة: {{ activeRedemption?.user?.full_name || 'سارة أحمد' }}</strong>
+        <span class="d-block text-muted">كود الخصم: <span class="badge-code">{{ activeRedemption?.referral_code?.code || 'LETOILE15' }}</span></span>
+      </div>
+
+      <div class="form-group">
+        <label>إجمالي قيمة الفاتورة المدفوعة في الصالون (ج.م) <span class="req">*</span></label>
+        <input type="number" [(ngModel)]="invoiceValue" class="input-custom" />
+        <small class="hint text-muted">سيتم احتساب عمولة المنصة (10%): <strong>{{ Math.round((invoiceValue || 0) * 0.1) }} ج.م</strong></small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button (click)="isConfirmModalOpen = false" class="btn-outline">إلغاء</button>
+      <button (click)="submitConfirmRedemption()" class="btn-primary">تأكيد الزيارة والخصم</button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add/Edit Service Modal -->
+  <div class="modal-backdrop" *ngIf="isServiceModalOpen" (click)="isServiceModalOpen = false"></div>
+  <div class="modal-content beauty-card modal-dialog-box" *ngIf="isServiceModalOpen">
+    <div class="modal-header">
+      <h3>{{ editingService ? 'تعديل الخدمة' : 'إضافة خدمة جديدة للصالون' }}</h3>
+      <button (click)="isServiceModalOpen = false" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>اسم الخدمة <span class="req">*</span></label>
+        <input type="text" [(ngModel)]="serviceForm.service_name" placeholder="مثال: جلسة علاج الأرجان والفيلر" class="input-custom" />
+      </div>
+
+      <div class="form-grid mt-2">
+        <div class="form-group">
+          <label>السعر من (ج.م) <span class="req">*</span></label>
+          <input type="number" [(ngModel)]="serviceForm.price_from" class="input-custom" />
+        </div>
+        <div class="form-group">
+          <label>السعر إلى (ج.م) <span class="req">*</span></label>
+          <input type="number" [(ngModel)]="serviceForm.price_to" class="input-custom" />
+        </div>
+      </div>
+
+      <div class="form-group mt-2">
+        <label>القسم / التصنيف</label>
+        <select [(ngModel)]="serviceForm.category" class="input-custom">
+          <option value="hair">عناية وترميم الشعر (Hair)</option>
+          <option value="skin">بشرة ونضارة (Skin)</option>
+          <option value="spa">حمام مغربي وسبا (Spa)</option>
+          <option value="makeup">ميك أب وتسريحات (Beauty)</option>
+        </select>
+      </div>
+
+      <div class="form-group mt-2">
+        <label>وصف الخدمة والمميزات</label>
+        <textarea [(ngModel)]="serviceForm.description" placeholder="المواد المستخدمة، مدة الجلسة..." class="input-custom" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button (click)="isServiceModalOpen = false" class="btn-outline">إلغاء</button>
+      <button (click)="saveService()" class="btn-primary">حفظ الخدمة</button>
+    </div>
+  </div>
+
+</div>

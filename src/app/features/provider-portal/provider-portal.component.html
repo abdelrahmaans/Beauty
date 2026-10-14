@@ -1,0 +1,623 @@
+<div class="portal-standalone-wrapper">
+
+  <!-- Mobile Top Bar with Burger Button -->
+  <header class="portal-mobile-topbar show-on-mobile">
+    <div class="mobile-topbar-brand">
+      <div class="brand-symbol-mini">
+        <i class="fa-solid fa-feather-pointed"></i>
+      </div>
+      <div class="mobile-brand-meta">
+        <strong class="mobile-brand-title">BEAUTY</strong>
+        <span class="mobile-brand-subtitle">بوابة الأخصائية</span>
+      </div>
+    </div>
+
+    <div class="mobile-topbar-actions">
+      <a routerLink="/" target="_blank" class="mobile-action-btn" title="معاينة المتجر للعملاء">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </a>
+      <button class="burger-menu-btn" (click)="toggleMobileSidebar()" [attr.aria-expanded]="isMobileSidebarOpen" title="القائمة الرئيسية">
+        <i class="fa-solid" [ngClass]="isMobileSidebarOpen ? 'fa-xmark' : 'fa-bars-staggered'"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Backdrop -->
+  <div
+    class="sidebar-backdrop show-on-mobile"
+    *ngIf="isMobileSidebarOpen"
+    (click)="closeMobileSidebar()"
+  ></div>
+
+  <!-- =================================================================== -->
+  <!-- RIGHT SIDEBAR (سايد بار الأخصائية على اليمين) -->
+  <!-- =================================================================== -->
+  <aside class="portal-sidebar" [class.mobile-open]="isMobileSidebarOpen">
+
+    <!-- Mobile Drawer Close Header -->
+    <div class="sidebar-mobile-close-bar show-on-mobile">
+      <span class="close-bar-title"><i class="fa-solid fa-wand-magic-sparkles text-primary"></i> بوابة الأخصائية</span>
+      <button class="close-sidebar-btn" (click)="closeMobileSidebar()" title="إغلاق القائمة">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Sidebar Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-symbol">
+        <i class="fa-solid fa-feather-pointed"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">BEAUTY</span>
+        <span class="brand-badge">بوابة الأخصائيات المعتمدة</span>
+      </div>
+    </div>
+
+    <!-- Provider Profile Card -->
+    <div class="provider-profile-card">
+      <div class="provider-avatar">
+        <img
+          [src]="providersService.currentProvider()?.avatar_url || 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80'"
+          [alt]="providersService.currentProvider()?.display_name"
+        />
+        <span class="online-indicator" [class.busy]="!isAvailable" [title]="isAvailable ? 'متاحة للعمل' : 'مشغولة'"></span>
+      </div>
+      <div class="provider-details">
+        <strong class="provider-name">{{ providersService.currentProvider()?.display_name || auth.profile()?.full_name || 'أخصائية التجميل' }}</strong>
+        <span class="provider-role">
+          <i class="fa-solid fa-circle-check text-success"></i> {{ getStatusBadge(providersService.currentProvider()?.status) }}
+        </span>
+        <div class="provider-rating">
+          <span class="star">★</span> {{ providersService.currentProvider()?.rating_avg || 4.95 }}
+          <small class="text-muted">({{ providersService.currentProvider()?.rating_count || 54 }} جلسة)</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Availability Status Toggle -->
+    <div class="availability-card" [class.active]="isAvailable">
+      <div class="avail-info">
+        <span class="avail-title">حالة استقبال الجلسات:</span>
+        <strong class="avail-status">{{ isAvailable ? 'متاحة للترشيح الفوري 🟢' : 'مشغولة مؤقتاً ⚪' }}</strong>
+      </div>
+      <button (click)="toggleAvailability()" class="btn-avail-toggle" [class.on]="isAvailable">
+        {{ isAvailable ? 'إيقاف مؤقت' : 'تفعيل الاستقبال' }}
+      </button>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">إدارة الجلسات والعمليات</span>
+
+      <!-- 1. Overview -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'overview'"
+        (click)="setTab('overview')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-gauge-high icon"></i>
+          <span>نظرة عامة والمهام</span>
+        </div>
+        <span class="counter-badge warning" *ngIf="getUpcomingBookingsCount() > 0">
+          {{ getUpcomingBookingsCount() }}
+        </span>
+      </button>
+
+      <!-- 2. My Sessions -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'bookings'"
+        (click)="setTab('bookings')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-calendar-check icon"></i>
+          <span>جلساتي وجدول المواعيد</span>
+        </div>
+        <span class="counter-badge neutral">{{ bookingsService.myProviderBookings().length }}</span>
+      </button>
+
+      <!-- 3. Wallet & Earnings -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'earnings'"
+        (click)="setTab('earnings')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-wallet icon"></i>
+          <span>المحفظة وتوريد الأرباح</span>
+        </div>
+        <span class="counter-badge success">{{ getNetEarnings() }} ج.م</span>
+      </button>
+
+      <!-- 4. Client Reviews -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'reviews'"
+        (click)="setTab('reviews')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-star icon"></i>
+          <span>تقييمات وآراء العميلات</span>
+        </div>
+        <span class="counter-badge gold">★ 4.95</span>
+      </button>
+
+      <!-- 5. Profile & Verification -->
+      <button
+        class="sidebar-nav-item"
+        [class.active]="activeTab === 'profile'"
+        (click)="setTab('profile')"
+      >
+        <div class="nav-item-content">
+          <i class="fa-solid fa-id-card icon"></i>
+          <span>بروفايلي ووثائق الاعتماد</span>
+        </div>
+      </button>
+    </nav>
+
+    <!-- Sidebar Bottom Actions -->
+    <div class="sidebar-bottom-actions">
+      <a routerLink="/" target="_blank" class="sidebar-btn-store" title="معاينة المتجر للعملاء في نافذة جديدة">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        <span>معاينة المتجر للعملاء</span>
+      </a>
+
+      <button (click)="auth.signOut()" class="sidebar-btn-logout">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- =================================================================== -->
+  <!-- MAIN WORKSPACE CONTENT (مساحة العمل للأخصائية) -->
+  <!-- =================================================================== -->
+  <main class="portal-main-area">
+
+    <!-- Workspace Top Header (يظهر فقط في قسم النظرة العامة) -->
+    <header class="workspace-header animate-fade-in" *ngIf="activeTab === 'overview'">
+      <div class="workspace-title-box">
+        <div class="breadcrumb-tag">
+          <i class="fa-solid fa-spa"></i>
+          <span>بوابة الأخصائية</span>
+          <i class="fa-solid fa-chevron-left divider-icon"></i>
+          <span class="active-crumb">لوحة التحكم وجدول العمل</span>
+        </div>
+        <h2 class="current-section-title">أهلاً بكِ، {{ providersService.currentProvider()?.display_name || 'أخصائية بيوتي' }} 👋</h2>
+      </div>
+
+      <div class="workspace-quick-actions">
+        <button (click)="activeTab = 'bookings'" class="btn-primary btn-sm">
+          <i class="fa-solid fa-calendar-days"></i>
+          <span>جدول الجلسات</span>
+        </button>
+
+        <button (click)="activeTab = 'earnings'" class="btn-outline btn-sm">
+          <i class="fa-solid fa-money-bill-transfer"></i>
+          <span>سحب الأرباح</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: OVERVIEW (نظرة عامة والمهام العاجلة) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper animate-fade-in" *ngIf="activeTab === 'overview'">
+
+      <!-- Specialist KPI Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card beauty-card">
+          <div class="metric-icon money"><i class="fa-solid fa-wallet"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">صافي أرباحكِ المستحقة</span>
+            <span class="metric-val">{{ getNetEarnings() | number:'1.0-0' }} <small>ج.م</small></span>
+            <span class="metric-sub text-success">بعد اقتطاع 15% عمولة المنصة</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon orders"><i class="fa-solid fa-clock"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">جلسات قادمة ومؤكدة</span>
+            <span class="metric-val">{{ getUpcomingBookingsCount() }}</span>
+            <span class="metric-sub text-muted">جلسات مجدولة بانتظار التنفيذ</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon success"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">الجلسات المكتملة</span>
+            <span class="metric-val">{{ getCompletedBookingsCount() }}</span>
+            <span class="metric-sub text-muted">تم تسليمها واستلام قيمتها</span>
+          </div>
+        </div>
+
+        <div class="metric-card beauty-card">
+          <div class="metric-icon rating"><i class="fa-solid fa-star"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">متوسط تقييم العميلات</span>
+            <span class="metric-val">4.95 <small>★</small></span>
+            <span class="metric-sub text-success">أخصائية نخبة مميزة (Top Rated)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Urgent Task / Upcoming Today Feed -->
+      <div class="urgent-session-card beauty-card" *ngIf="getUpcomingBookings().length > 0">
+        <div class="urgent-header">
+          <div class="u-badge">
+            <span class="pulse-indicator"></span>
+            <strong>جلستكِ القادمة (بانتظار التحرك والتنفيذ)</strong>
+          </div>
+          <span class="badge-pill active">{{ getUpcomingBookings()[0].scheduled_at | date:'fullDate':'':'ar-EG' }}</span>
+        </div>
+
+        <div class="u-content-box">
+          <div class="u-srv-info">
+            <h3 class="srv-title">{{ getUpcomingBookings()[0].service_type }}</h3>
+            <p class="srv-addr"><i class="fa-solid fa-location-dot text-primary"></i> {{ getUpcomingBookings()[0].requested_area }}</p>
+            <p class="srv-notes text-muted" *ngIf="getUpcomingBookings()[0].notes">
+              <i class="fa-solid fa-note-sticky"></i> ملاحظات العميلة: {{ getUpcomingBookings()[0].notes }}
+            </p>
+          </div>
+
+          <div class="u-client-action">
+            <div class="client-mini">
+              <strong>{{ getUpcomingBookings()[0].customer_name }}</strong>
+              <small dir="ltr"><i class="fa-solid fa-phone"></i> {{ getUpcomingBookings()[0].customer_phone }}</small>
+              <div class="price-chip">قيمة الجلسة: <strong>{{ getUpcomingBookings()[0].agreed_price }} ج.م</strong></div>
+            </div>
+
+            <div class="btn-actions-row">
+              <button
+                *ngIf="getUpcomingBookings()[0].status === 'confirmed'"
+                (click)="updateStatus(getUpcomingBookings()[0].id, 'in_progress')"
+                class="feed-action-btn urgent"
+              >
+                <i class="fa-solid fa-bolt"></i>
+                <span>بدء الجلسة الآن</span>
+              </button>
+
+              <button
+                *ngIf="getUpcomingBookings()[0].status === 'in_progress'"
+                (click)="updateStatus(getUpcomingBookings()[0].id, 'completed')"
+                class="feed-action-btn urgent success"
+              >
+                <i class="fa-solid fa-circle-check"></i>
+                <span>إنهاء الجلسة وتسجيل الاكتمال</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: MY SESSIONS & SCHEDULE (جلساتي وجدول المواعيد) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'bookings'">
+      <div class="panel-header">
+        <div>
+          <h3>جدول الجلسات المنزلية المسندة لكِ</h3>
+          <p class="panel-subtitle text-muted">تابعي كل جلسة، بيانات العميلة، العنوان، وحدّثي مرحلة الجلسة لحظياً</p>
+        </div>
+
+        <div class="filter-pills">
+          <button class="badge-pill" [class.active]="bookingFilter === 'all'" (click)="bookingFilter = 'all'">
+            الكل ({{ bookingsService.myProviderBookings().length }})
+          </button>
+          <button class="badge-pill warning" [class.active]="bookingFilter === 'confirmed'" (click)="bookingFilter = 'confirmed'">
+            قادمة ومؤكدة ({{ getUpcomingBookingsCount() }})
+          </button>
+          <button class="badge-pill info" [class.active]="bookingFilter === 'in_progress'" (click)="bookingFilter = 'in_progress'">
+            جارية حالياً
+          </button>
+          <button class="badge-pill success" [class.active]="bookingFilter === 'completed'" (click)="bookingFilter = 'completed'">
+            مكتملة بنجاح
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state-box" *ngIf="getFilteredBookings().length === 0">
+        <i class="fa-solid fa-calendar-xmark empty-icon"></i>
+        <h4>لا توجد جلسات في هذا القسم حالياً</h4>
+        <p class="text-muted">عندما تقوم الإدارة بترشيحكِ لجلسة جديدة ستظهر لكِ هنا فوراً مع تنبيه بالموعد.</p>
+      </div>
+
+      <!-- Sessions Cards List -->
+      <div class="sessions-cards-list" *ngIf="getFilteredBookings().length > 0">
+        <div class="session-card beauty-card" *ngFor="let bk of getFilteredBookings()">
+          <div class="s-top-row">
+            <div>
+              <span class="s-id">حجز رقم #{{ bk.id }}</span>
+              <h4 class="s-service">{{ bk.service_type }}</h4>
+            </div>
+
+            <div class="s-status-tag">
+              <span class="status-pill" [ngClass]="'status-' + bk.status">
+                {{ getStatusArabic(bk.status) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="s-info-grid">
+            <div class="s-detail-cell">
+              <i class="fa-solid fa-user text-primary"></i>
+              <div>
+                <span class="lbl">العميلة:</span>
+                <strong>{{ bk.customer_name }}</strong>
+              </div>
+            </div>
+
+            <div class="s-detail-cell">
+              <i class="fa-solid fa-phone text-primary"></i>
+              <div>
+                <span class="lbl">رقم التواصل:</span>
+                <strong dir="ltr">{{ bk.customer_phone }}</strong>
+              </div>
+            </div>
+
+            <div class="s-detail-cell full">
+              <i class="fa-solid fa-location-dot text-primary"></i>
+              <div>
+                <span class="lbl">العنوان وموقع الجلسة:</span>
+                <strong>{{ bk.requested_area }}</strong>
+              </div>
+            </div>
+
+            <div class="s-detail-cell">
+              <i class="fa-regular fa-calendar-check text-primary"></i>
+              <div>
+                <span class="lbl">الموعد المحدد:</span>
+                <strong>{{ bk.scheduled_at | date:'medium' }}</strong>
+              </div>
+            </div>
+
+            <div class="s-detail-cell">
+              <i class="fa-solid fa-sack-dollar text-primary"></i>
+              <div>
+                <span class="lbl">السعر المتفق عليه:</span>
+                <strong>{{ bk.agreed_price }} ج.م</strong>
+                <small class="text-success d-block">صافي حصتكِ (85%): {{ Math.round((bk.agreed_price || 0) * 0.85) }} ج.م</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="s-notes-box" *ngIf="bk.notes">
+            <i class="fa-solid fa-note-sticky text-muted"></i>
+            <span>ملاحظات العميلة: {{ bk.notes }}</span>
+          </div>
+
+          <!-- Actions Toolbar -->
+          <div class="s-actions-toolbar">
+            <div class="btn-group">
+              <button
+                *ngIf="bk.status === 'confirmed'"
+                (click)="updateStatus(bk.id, 'in_progress')"
+                class="btn-primary btn-sm"
+              >
+                <i class="fa-solid fa-bolt"></i> بدء الجلسة الآن
+              </button>
+
+              <button
+                *ngIf="bk.status === 'in_progress'"
+                (click)="updateStatus(bk.id, 'completed')"
+                class="btn-primary btn-sm btn-success"
+              >
+                <i class="fa-solid fa-circle-check"></i> إنهاء الجلسة واكتمالها
+              </button>
+
+              <a [href]="'tel:' + bk.customer_phone" class="btn-outline btn-sm">
+                <i class="fa-solid fa-phone"></i> اتصال بالعميلة
+              </a>
+            </div>
+
+            <span class="completed-msg text-success" *ngIf="bk.status === 'completed'">
+              <i class="fa-solid fa-check-double"></i> الجلسة مكتملة ومحسوبة في محفظتكِ
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: WALLET & EARNINGS (المحفظة وتوريد الأرباح) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'earnings'">
+      <div class="panel-header">
+        <div>
+          <h3>المحفظة المالية ومستحقات الجلسات</h3>
+          <p class="panel-subtitle text-muted">متابعة حسابات الجلسات، العمولات المقتطعة، وطلب سحب الرصيد</p>
+        </div>
+
+        <button (click)="openPayoutModal()" class="btn-primary btn-sm">
+          <i class="fa-solid fa-hand-holding-dollar"></i> طلب سحب رصيد
+        </button>
+      </div>
+
+      <div class="wallet-balance-card">
+        <div class="wb-info">
+          <span class="wb-lbl">الرصيد الصافي المتاح للسحب الآن:</span>
+          <strong class="wb-amount">{{ getNetEarnings() }} <small>ج.م</small></strong>
+          <span class="wb-sub text-muted">يتم التحويل خلال ساعتين عبر InstaPay أو فودافون كاش أو الحساب البنكي</span>
+        </div>
+        <div class="wb-metrics-col">
+          <div class="wbm-row">
+            <span>إجمالي قيمة الجلسات:</span>
+            <strong>{{ getTotalSessionValue() }} ج.م</strong>
+          </div>
+          <div class="wbm-row">
+            <span>عمولة المنصة (15%):</span>
+            <strong class="text-danger">- {{ Math.round(getTotalSessionValue() * 0.15) }} ج.م</strong>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="sub-table-title mt-4"><i class="fa-solid fa-receipt"></i> سجل جلساتكِ المحصلة</h4>
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>رقم الجلسة</th>
+              <th>الخدمة المنفذة</th>
+              <th>العميلة</th>
+              <th>إجمالي الفاتورة</th>
+              <th>عمولة بيوتي (15%)</th>
+              <th>صافي ربحكِ</th>
+              <th>حالة السداد</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let bk of bookingsService.myProviderBookings()">
+              <td><strong>#{{ bk.id }}</strong></td>
+              <td>{{ bk.service_type }}</td>
+              <td>{{ bk.customer_name }}</td>
+              <td><strong>{{ bk.agreed_price }} ج.م</strong></td>
+              <td class="text-danger">- {{ Math.round((bk.agreed_price || 0) * 0.15) }} ج.م</td>
+              <td class="text-success"><strong>{{ Math.round((bk.agreed_price || 0) * 0.85) }} ج.م</strong></td>
+              <td>
+                <span class="badge-pill success">تم الإيداع في رصيدك ✓</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: REVIEWS & RATINGS (تقييمات وآراء العميلات) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'reviews'">
+      <div class="panel-header">
+        <div>
+          <h3>تقييمات وآراء العميلات بعد انتهاء الجلسات</h3>
+          <p class="panel-subtitle text-muted">تقييمكِ الحالي 4.95 من 5 بناءً على جودة التنفيذ والالتزام بالمواعيد</p>
+        </div>
+        <span class="badge-pill gold">★ 4.95 ممتازة</span>
+      </div>
+
+      <div class="reviews-list-grid">
+        <div class="review-item-card beauty-card">
+          <div class="rev-top">
+            <div class="rev-stars">★ ★ ★ ★ ★</div>
+            <span class="rev-date">منذ 3 أيام</span>
+          </div>
+          <p class="rev-comment">"أمنية ممتازة جداً ووصلت في الموعد بالظبط بكامل معداتها، والبروتين نتيجته تحفة والشعر بقى ناعم وصحي جداً، شكراً بيوتي!"</p>
+          <div class="rev-author">
+            <strong>سارة أحمد</strong>
+            <small class="text-muted">جلسة بروتين وكولاجين وترميم الشعر الفاخر • التجمع الخامس</small>
+          </div>
+        </div>
+
+        <div class="review-item-card beauty-card">
+          <div class="rev-top">
+            <div class="rev-stars">★ ★ ★ ★ ★</div>
+            <span class="rev-date">الأسبوع الماضي</span>
+          </div>
+          <p class="rev-comment">"جلسة نضارة وهيدرافيشال خرافية، بشرتي بقت ناعمة وصافية زي الزجاج، شكراً لذوقك وأمانتك."</p>
+          <div class="rev-author">
+            <strong>هدير مصطفى</strong>
+            <small class="text-muted">جلسة هيدرافيشال ونضارة البشرة الزجاجية • المعادي</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: PROFILE & VERIFICATION (بروفايلي ووثائق الاعتماد) -->
+    <!-- =================================================================== -->
+    <div class="tab-content-wrapper beauty-card animate-fade-in" *ngIf="activeTab === 'profile'">
+      <div class="panel-header">
+        <div>
+          <h3>الملف الشخصي ووثائق الاعتماد والترخيص</h3>
+          <p class="panel-subtitle text-muted">تعديل بيانات الاتصال، التخصصات، ومناطق التغطية الجغرافية للعمل</p>
+        </div>
+
+        <span class="badge-pill success">حساب موثق ومعتمد رسمي ✓</span>
+      </div>
+
+      <form (ngSubmit)="saveOnboarding()" class="profile-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>الاسم المهني المعروض للعميلات <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="onboardName" name="onboardName" class="input-custom" />
+          </div>
+
+          <div class="form-group">
+            <label>رقم الموبايل المسجل <span class="req">*</span></label>
+            <input type="tel" [(ngModel)]="onboardPhone" name="onboardPhone" class="input-custom" dir="ltr" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>نطاق ومناطق التغطية الجغرافية المفضلة للعمل <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="onboardCity" name="onboardCity" class="input-custom" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>نبذة عن خبرتكِ وتجهيزاتكِ للعميلات</label>
+            <textarea [(ngModel)]="onboardBio" name="onboardBio" class="input-custom" rows="3"></textarea>
+          </div>
+        </div>
+
+        <!-- Documents Status Badges -->
+        <div class="docs-verified-box">
+          <h4><i class="fa-solid fa-shield-halved text-success"></i> المستندات المرفوعة والموثقة:</h4>
+          <div class="docs-chips-row">
+            <div class="doc-chip verified">
+              <i class="fa-solid fa-file-circle-check"></i>
+              <span>بطاقة الرقم القومي (تم التحقق ✓)</span>
+            </div>
+            <div class="doc-chip verified">
+              <i class="fa-solid fa-award"></i>
+              <span>شهادة الخبرة والاعتماد المهني (معتمدة ✓)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <span *ngIf="isOnboardSaved" class="text-success font-weight-bold">تم حفظ وتحديث بيانات البروفايل بنجاح ✓</span>
+          <button type="submit" class="btn-primary">حفظ التعديلات</button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Payout Request Modal -->
+  <div class="modal-backdrop" *ngIf="isPayoutModalOpen" (click)="closePayoutModal()"></div>
+  <div class="modal-content beauty-card modal-dialog-box" *ngIf="isPayoutModalOpen">
+    <div class="modal-header">
+      <h3>طلب سحب رصيد فوري من المحفظة</h3>
+      <button (click)="closePayoutModal()" class="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="text-muted mb-3">رصيدك المتاح للسحب حالياً هو <strong>{{ getNetEarnings() }} ج.م</strong>. سيتم التحويل في غضون ساعتين عمل.</p>
+      <div class="form-group">
+        <label>المبلغ المطلوب سحبه (ج.م) <span class="req">*</span></label>
+        <input type="number" [(ngModel)]="payoutAmount" [max]="getNetEarnings()" class="input-custom" />
+      </div>
+      <div class="form-group mt-3">
+        <label>طريقة الاستلام المفضلة <span class="req">*</span></label>
+        <select [(ngModel)]="payoutChannel" class="input-custom">
+          <option value="instapay">تحويل فوري InstaPay</option>
+          <option value="vodafone_cash">محفظة فودافون كاش (Vodafone Cash)</option>
+          <option value="bank">حساب بنكي محلي (IBAN)</option>
+        </select>
+      </div>
+      <div class="form-group mt-3">
+        <label>رقم المحفظة / حساب InstaPay / الـ IBAN <span class="req">*</span></label>
+        <input type="text" [(ngModel)]="payoutTarget" placeholder="مثال: 010xxxxxxxx أو username@instapay" class="input-custom" dir="ltr" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button (click)="closePayoutModal()" class="btn-outline">إلغاء</button>
+      <button (click)="submitPayout()" class="btn-primary">تأكيد طلب السحب</button>
+    </div>
+  </div>
+
+</div>

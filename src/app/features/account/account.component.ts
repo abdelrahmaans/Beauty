@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdersService } from '../../core/services/orders.service';
 import { PaymentProofsService } from '../../core/services/payment-proofs.service';
+import { BookingsService } from '../../core/services/bookings.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
 
@@ -43,6 +44,25 @@ import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
           </div>
         </div>
 
+        <!-- Staff Portal Access Links (If user is Admin / Specialist / Center) -->
+        <div class="staff-portal-banner" *ngIf="auth.isAdmin() || auth.isProvider() || auth.isCenter()">
+          <a *ngIf="auth.isAdmin()" routerLink="/admin" class="btn-staff-portal admin">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>الانتقال إلى لوحة التحكم الإدارية المركزية (Admin Portal)</span>
+            <i class="fa-solid fa-arrow-left"></i>
+          </a>
+          <a *ngIf="auth.isProvider()" routerLink="/provider" class="btn-staff-portal provider">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>الانتقال إلى بوابة الأخصائية (Specialist Portal)</span>
+            <i class="fa-solid fa-arrow-left"></i>
+          </a>
+          <a *ngIf="auth.isCenter()" routerLink="/center" class="btn-staff-portal center">
+            <i class="fa-solid fa-hotel"></i>
+            <span>الانتقال إلى بوابة المركز الشريك (Center Portal)</span>
+            <i class="fa-solid fa-arrow-left"></i>
+          </a>
+        </div>
+
         <!-- Account Navigation Tabs -->
         <div class="account-tabs">
           <button
@@ -52,6 +72,12 @@ import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
           >
             <i class="fa-solid fa-box-archive"></i> طلباتي ({{ ordersService.orders().length }})
           </button>
+          <a
+            routerLink="/booking/my-bookings"
+            class="tab-link"
+          >
+            <i class="fa-solid fa-wand-magic-sparkles"></i> جلساتي المنزلية ({{ bookingsService.myCustomerBookings().length }})
+          </a>
           <button
             class="tab-link"
             [class.active]="activeTab === 'profile'"
@@ -73,9 +99,16 @@ import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
           <div class="orders-list" *ngIf="ordersService.orders().length > 0">
             <div class="order-card beauty-card" *ngFor="let order of ordersService.orders()">
               <div class="order-card-header">
-                <div>
-                  <span class="order-id">طلب رقم: <strong>#{{ order.id }}</strong></span>
-                  <span class="order-date">{{ order.created_at | date:'yyyy/MM/dd - hh:mm a' }}</span>
+                <div class="order-header-meta">
+                  <span class="order-id">
+                    طلب رقم: <strong class="order-code" dir="ltr">#ORD-{{ getOrderCode(order.id) }}</strong>
+                  </span>
+                  <span class="order-date">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    تاريخ الطلب:
+                    <strong>{{ order.created_at | date:'yyyy/MM/dd' }}</strong>
+                    <span class="time-tag">• {{ order.created_at | date:'hh:mm a' }}</span>
+                  </span>
                 </div>
                 <div class="status-badge" [ngClass]="getStatusClass(order.status)">
                   {{ getStatusArabic(order.status) }}
@@ -305,6 +338,43 @@ import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
     .order-card {
       padding: 1.5rem 1.75rem;
     }
+    .staff-portal-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .btn-staff-portal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-radius: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: var(--transition-smooth);
+      border: 1.5px solid transparent;
+
+      &.admin {
+        background: #FEF2F2;
+        color: #DC2626;
+        border-color: #FECACA;
+        &:hover { background: #DC2626; color: #FFFFFF; transform: translateY(-2px); }
+      }
+      &.provider {
+        background: #F0FDF4;
+        color: #16A34A;
+        border-color: #BBF7D0;
+        &:hover { background: #16A34A; color: #FFFFFF; transform: translateY(-2px); }
+      }
+      &.center {
+        background: #FFFBEB;
+        color: #D97706;
+        border-color: #FDE68A;
+        &:hover { background: #D97706; color: #FFFFFF; transform: translateY(-2px); }
+      }
+    }
+
     .order-card-header {
       display: flex;
       justify-content: space-between;
@@ -312,15 +382,49 @@ import { OrderStatus, PaymentMethod, PaymentProof } from '../../core/models';
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--color-border-light);
       margin-bottom: 1.25rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .order-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
     .order-id {
-      font-size: 1.05rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 1rem;
+      font-weight: 700;
       color: var(--color-text-main);
-      margin-left: 1rem;
+    }
+    .order-code {
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      padding: 0.2rem 0.65rem;
+      border-radius: 8px;
+      font-family: var(--font-latin), monospace;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      direction: ltr;
+      display: inline-block;
+      box-shadow: 0 1px 3px rgba(196, 109, 91, 0.15);
     }
     .order-date {
-      font-size: 0.8rem;
-      color: var(--color-text-subtle);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      background: #FAF7F5;
+      padding: 0.3rem 0.8rem;
+      border-radius: 9999px;
+      border: 1px solid var(--color-border-light);
+
+      i { color: var(--color-primary); }
+      strong { color: var(--color-text-main); font-weight: 600; }
+      .time-tag { color: var(--color-text-subtle); margin-right: 0.2rem; }
     }
     .status-badge {
       padding: 0.35rem 0.85rem;
@@ -484,6 +588,7 @@ export class AccountComponent {
   auth = inject(AuthService);
   ordersService = inject(OrdersService);
   paymentProofsService = inject(PaymentProofsService);
+  bookingsService = inject(BookingsService);
   private supabase = inject(SupabaseService);
 
   activeTab: 'orders' | 'profile' = 'orders';
@@ -556,5 +661,10 @@ export class AccountComponent {
 
     this.isSaved = true;
     setTimeout(() => (this.isSaved = false), 3000);
+  }
+
+  getOrderCode(id: string): string {
+    if (!id) return '';
+    return id.replace(/-/g, '').slice(0, 8).toUpperCase();
   }
 }

@@ -1,15 +1,15 @@
-<div class="app-layout">
-  <!-- Global Navbar with search, cart, and role switch -->
-  <app-navbar></app-navbar>
+<div class="app-layout" [class.admin-layout-active]="isAdminRoute()">
+  <!-- Global Navbar (Hidden on Admin pages) -->
+  <app-navbar *ngIf="!isAdminRoute()"></app-navbar>
 
   <!-- Main View Routing Outlet -->
-  <main class="main-content">
+  <main class="main-content" [class.admin-main-reset]="isAdminRoute()">
     <router-outlet></router-outlet>
   </main>
 
-  <!-- Global Slide-in Cart Drawer -->
-  <app-cart-drawer></app-cart-drawer>
+  <!-- Global Slide-in Cart Drawer (Hidden on Admin) -->
+  <app-cart-drawer *ngIf="!isAdminRoute()"></app-cart-drawer>
 
-  <!-- Global Footer & Trust Badges -->
-  <app-footer></app-footer>
+  <!-- Global Footer & Trust Badges (Hidden on Admin) -->
+  <app-footer *ngIf="!isAdminRoute()"></app-footer>
 </div>

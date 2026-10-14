@@ -37,6 +37,22 @@ export class PaymentProofsService {
     private bookingsService: BookingsService
   ) {
     this.loadProofs();
+    this.initRealtime();
+  }
+
+  private initRealtime(): void {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        client.channel('realtime_payment_proofs_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_proofs' }, () => {
+            this.loadProofs();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime payment_proofs subscription note:', e);
+      }
+    }
   }
 
   async loadProofs(): Promise<void> {
@@ -107,9 +123,25 @@ export class PaymentProofsService {
     };
 
     const client = this.supabase.client;
-    if (client) {
+    if (client && userProfile) {
       try {
-        await client.from('payment_proofs').insert([newProof]);
+        const proofRow: any = {
+          reference_type: payload.referenceType,
+          reference_id: payload.referenceId,
+          user_id: userProfile.id,
+          channel: payload.channel,
+          sender_name: payload.senderName || userProfile.full_name || 'العميل',
+          amount_claimed: payload.amountClaimed,
+          receipt_storage_path: payload.receiptStoragePath,
+          status: 'pending_review'
+        };
+        const { data: inserted, error } = await client.from('payment_proofs').insert([proofRow]).select().single();
+        if (inserted?.id) {
+          newProof.id = inserted.id;
+        }
+        if (error) {
+          console.warn('Supabase payment proof insert note:', error.message);
+        }
       } catch (e) {
         console.warn('Fallback to local storage for payment proof:', e);
       }
@@ -134,13 +166,27 @@ export class PaymentProofsService {
     const proof = this._proofs().find(p => p.id === proofId);
     if (!proof) return false;
 
+    const reviewerId = this.auth.profile()?.id || 'usr-admin-01';
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('payment_proofs').update({
+          status: 'approved',
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString()
+        }).eq('id', proofId);
+      } catch (e) {
+        console.warn('Supabase approveProof fallback:', e);
+      }
+    }
+
     this._proofs.update(list =>
       list.map(p => {
         if (p.id === proofId) {
           return {
             ...p,
             status: 'approved' as PaymentProofStatus,
-            reviewed_by: this.auth.profile()?.id || 'usr-admin-01',
+            reviewed_by: reviewerId,
             reviewed_at: new Date().toISOString()
           };
         }
@@ -171,6 +217,21 @@ export class PaymentProofsService {
     const proof = this._proofs().find(p => p.id === proofId);
     if (!proof) return false;
 
+    const reviewerId = this.auth.profile()?.id || 'usr-admin-01';
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('payment_proofs').update({
+          status: 'rejected',
+          admin_note: reason,
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString()
+        }).eq('id', proofId);
+      } catch (e) {
+        console.warn('Supabase rejectProof fallback:', e);
+      }
+    }
+
     this._proofs.update(list =>
       list.map(p => {
         if (p.id === proofId) {
@@ -178,7 +239,7 @@ export class PaymentProofsService {
             ...p,
             status: 'rejected' as PaymentProofStatus,
             admin_note: reason,
-            reviewed_by: this.auth.profile()?.id || 'usr-admin-01',
+            reviewed_by: reviewerId,
             reviewed_at: new Date().toISOString()
           };
         }

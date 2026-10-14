@@ -49,6 +49,22 @@ export class ReferralsService {
     private centersService: CentersService
   ) {
     this.loadRedemptions();
+    this.initRealtime();
+  }
+
+  private initRealtime(): void {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        client.channel('realtime_redemptions_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'referral_redemptions' }, () => {
+            this.loadRedemptions();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime redemptions subscription note:', e);
+      }
+    }
   }
 
   async loadRedemptions(): Promise<void> {
@@ -113,9 +129,22 @@ export class ReferralsService {
     };
 
     const client = this.supabase.client;
-    if (client) {
+    if (client && userProfile) {
       try {
-        await client.from('referral_redemptions').insert([newRedemption]);
+        const rdmRow: any = {
+          referral_code_id: center.referral_code.id,
+          user_id: userProfile.id,
+          provider_id: centerId,
+          status: 'claimed',
+          notes: notes || 'كود خصم حصري من منصة بيوتي للاستخدام في المركز'
+        };
+        const { data: inserted, error } = await client.from('referral_redemptions').insert([rdmRow]).select().single();
+        if (inserted?.id) {
+          newRedemption.id = inserted.id;
+        }
+        if (error) {
+          console.warn('Supabase referral redemption note:', error.message);
+        }
       } catch (err) {
         console.warn('Fallback to local storage for referral redemption:', err);
       }
@@ -142,6 +171,20 @@ export class ReferralsService {
 
     const rate = target.referral_code?.commission_rate || 10;
     const commissionAmount = Math.round(estimatedValue * (rate / 100));
+
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('referral_redemptions').update({
+          status: 'confirmed_by_center',
+          estimated_value: estimatedValue,
+          commission_amount: commissionAmount,
+          confirmed_at: new Date().toISOString()
+        }).eq('id', redemptionId);
+      } catch (err) {
+        console.warn('Supabase confirm redemption fallback:', err);
+      }
+    }
 
     this._redemptions.update(list =>
       list.map(r => {
@@ -173,6 +216,19 @@ export class ReferralsService {
 
   // 3. Partner Center rejects redemption (e.g. customer no-show)
   async rejectRedemption(redemptionId: string, reason?: string): Promise<boolean> {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('referral_redemptions').update({
+          status: 'rejected',
+          notes: reason || 'تم الرفض لعدم حضور العميل أو عدم استخدام الكود',
+          confirmed_at: new Date().toISOString()
+        }).eq('id', redemptionId);
+      } catch (err) {
+        console.warn('Supabase reject redemption fallback:', err);
+      }
+    }
+
     this._redemptions.update(list =>
       list.map(r => {
         if (r.id === redemptionId) {
@@ -192,6 +248,17 @@ export class ReferralsService {
 
   // 4. Admin payout confirmation
   async markAsPaidOut(redemptionId: string): Promise<boolean> {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        await client.from('referral_redemptions').update({
+          status: 'paid_out'
+        }).eq('id', redemptionId);
+      } catch (err) {
+        console.warn('Supabase markAsPaidOut fallback:', err);
+      }
+    }
+
     this._redemptions.update(list =>
       list.map(r => (r.id === redemptionId ? { ...r, status: 'paid_out' as RedemptionStatus } : r))
     );

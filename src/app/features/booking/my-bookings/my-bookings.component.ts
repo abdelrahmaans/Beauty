@@ -46,9 +46,18 @@ import { UploadPaymentProofComponent } from '../../payment/upload-payment-proof/
           >
             <!-- Card Top Bar -->
             <div class="b-card-header">
-              <div>
-                <span class="booking-num">حجز رقم: <strong>#{{ b.id }}</strong></span>
-                <span class="booking-created">{{ b.created_at | date:'yyyy/MM/dd - hh:mm a' }}</span>
+              <div class="b-header-meta">
+                <span class="booking-num">
+                  <i class="fa-solid fa-sparkles text-primary"></i>
+                  جلسة رقم:
+                  <strong class="booking-code" dir="ltr">#BK-{{ getBookingCode(b.id) }}</strong>
+                </span>
+                <span class="booking-created">
+                  <i class="fa-regular fa-calendar-check"></i>
+                  تاريخ الحجز:
+                  <strong>{{ b.created_at | date:'yyyy/MM/dd' }}</strong>
+                  <span class="time-tag">• {{ b.created_at | date:'hh:mm a' }}</span>
+                </span>
               </div>
               <span class="status-pill" [ngClass]="'status-' + b.status">
                 {{ getStatusArabic(b.status) }}
@@ -375,13 +384,50 @@ import { UploadPaymentProofComponent } from '../../payment/upload-payment-proof/
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--color-border-light);
       margin-bottom: 1.25rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .b-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
     .booking-num {
-      font-size: 1.05rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 1rem;
+      font-weight: 700;
       color: var(--color-text-main);
-      margin-left: 1rem;
     }
-    .booking-created { font-size: 0.8rem; color: var(--color-text-subtle); }
+    .booking-code {
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      padding: 0.2rem 0.65rem;
+      border-radius: 8px;
+      font-family: var(--font-latin), monospace;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      direction: ltr;
+      display: inline-block;
+      box-shadow: 0 1px 3px rgba(196, 109, 91, 0.15);
+    }
+    .booking-created {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      background: #FAF7F5;
+      padding: 0.3rem 0.8rem;
+      border-radius: 9999px;
+      border: 1px solid var(--color-border-light);
+
+      i { color: var(--color-primary); }
+      strong { color: var(--color-text-main); font-weight: 600; }
+      .time-tag { color: var(--color-text-subtle); margin-right: 0.2rem; }
+    }
     .status-pill {
       font-size: 0.82rem;
       font-weight: 700;
@@ -657,6 +703,11 @@ export class MyBookingsComponent {
       reported: 'تم رفع بلاغ للإدارة'
     };
     return map[status] || status;
+  }
+
+  getBookingCode(id: string): string {
+    if (!id) return '';
+    return id.replace(/-/g, '').slice(0, 8).toUpperCase();
   }
 
   getBookingProof(bookingId: string): PaymentProof | undefined {

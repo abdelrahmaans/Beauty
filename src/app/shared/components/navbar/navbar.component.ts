@@ -47,7 +47,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
           </button>
         </div>
 
-        <!-- Desktop Navigation Links -->
+        <!-- Desktop Navigation Links (Strictly Customer-Centric) -->
         <nav class="nav-links hide-on-mobile">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
             الرئيسية
@@ -55,23 +55,14 @@ import { NotificationsService } from '../../../core/services/notifications.servi
           <a routerLink="/products" routerLinkActive="active" class="nav-item">
             المتجر
           </a>
-          <a routerLink="/booking/request" routerLinkActive="active" class="nav-item home-service-link">
-            <i class="fa-solid fa-sparkles"></i> جلسات منزلية
+          <a routerLink="/booking/request" routerLinkActive="active" class="nav-item">
+            جلسات منزلية
           </a>
-          <a routerLink="/centers" routerLinkActive="active" class="nav-item centers-link">
-            <i class="fa-solid fa-store"></i> دليل المراكز
+          <a routerLink="/centers" routerLinkActive="active" class="nav-item">
+            دليل المراكز
           </a>
-          <a routerLink="/booking/my-bookings" routerLinkActive="active" class="nav-item">
+          <a *ngIf="auth.isAuthenticated() && !auth.isAdmin() && !auth.isProvider() && !auth.isCenter()" routerLink="/booking/my-bookings" routerLinkActive="active" class="nav-item">
             جلساتي
-          </a>
-          <a *ngIf="auth.isProvider() || auth.isAdmin()" routerLink="/provider" routerLinkActive="active" class="nav-item provider-nav-link">
-            <i class="fa-solid fa-id-badge"></i> بوابة الأخصائية
-          </a>
-          <a *ngIf="auth.isCenter() || auth.isAdmin()" routerLink="/center" routerLinkActive="active" class="nav-item center-nav-link">
-            <i class="fa-solid fa-store"></i> بوابة المركز
-          </a>
-          <a *ngIf="auth.isAdmin()" routerLink="/admin" routerLinkActive="active" class="nav-item admin-link">
-            <i class="fa-solid fa-gauge-high"></i> لوحة التحكم
           </a>
         </nav>
 
@@ -82,7 +73,7 @@ import { NotificationsService } from '../../../core/services/notifications.servi
             <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول
           </a>
 
-          <!-- Desktop Logged In Account Link -->
+          <!-- Desktop Logged In Customer Account Link -->
           <ng-container *ngIf="auth.isAuthenticated()">
             <a routerLink="/account" class="action-btn hide-on-mobile" title="حسابي">
               <i class="fa-regular fa-user"></i>
@@ -211,40 +202,21 @@ import { NotificationsService } from '../../../core/services/notifications.servi
           <span class="badge-discount">خصم حتى 20%</span>
         </a>
 
-        <a routerLink="/booking/my-bookings" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item">
+        <a *ngIf="auth.isAuthenticated()" routerLink="/booking/my-bookings" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item">
           <i class="fa-solid fa-calendar-check"></i>
           <span>متابعة جلساتي المنزلية</span>
         </a>
 
-        <a routerLink="/centers/my-codes" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item">
+        <a *ngIf="auth.isAuthenticated()" routerLink="/centers/my-codes" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item">
           <i class="fa-solid fa-ticket"></i>
           <span>أكواد الخصم الخاصة بي في المراكز</span>
         </a>
 
-        <a routerLink="/account" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item">
+        <a *ngIf="auth.isAuthenticated()" routerLink="/account" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item">
           <i class="fa-regular fa-user"></i>
           <span>حسابي وتتبع طلبات المتجر</span>
         </a>
 
-        <!-- Portal / Management Links (Only if authorized) -->
-        <ng-container *ngIf="auth.isProvider() || auth.isCenter() || auth.isAdmin()">
-          <span class="drawer-section-title mt-3">البوابات والإدارة</span>
-
-          <a *ngIf="auth.isProvider() || auth.isAdmin()" routerLink="/provider" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item provider-item">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>بوابة الأخصائيات (Freelancers)</span>
-          </a>
-
-          <a *ngIf="auth.isCenter() || auth.isAdmin()" routerLink="/center" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item center-item">
-            <i class="fa-solid fa-hotel"></i>
-            <span>بوابة المراكز الشريكة (Centers)</span>
-          </a>
-
-          <a *ngIf="auth.isAdmin()" routerLink="/admin" (click)="closeMobileMenu()" routerLinkActive="active" class="drawer-nav-item admin-item">
-            <i class="fa-solid fa-gauge-high"></i>
-            <span>لوحة التحكم المركزية (Admin)</span>
-          </a>
-        </ng-container>
       </div>
 
       <!-- Partner Onboarding Callout (for Guests and regular customers) -->
@@ -339,22 +311,32 @@ import { NotificationsService } from '../../../core/services/notifications.servi
     }
     .clear-btn { position: absolute; left: 14px; background: none; border: none; color: var(--color-text-subtle); cursor: pointer; }
 
-    .nav-links { display: flex; align-items: center; gap: 0.6rem; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
     .nav-item {
       text-decoration: none;
       color: var(--color-text-main);
       font-weight: 600;
-      font-size: 0.88rem;
-      padding: 0.35rem 0.55rem;
-      border-radius: 8px;
-      transition: var(--transition-smooth);
+      font-size: 0.92rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 9999px;
+      transition: all 0.2s ease-in-out;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
 
-      &:hover, &.active { color: var(--color-primary); background: var(--color-primary-subtle); }
-      &.home-service-link { color: var(--color-secondary); background: var(--color-secondary-light); font-weight: 700; }
-      &.centers-link { color: #D97706; background: #FEF3C7; font-weight: 700; }
-      &.provider-nav-link { color: #15803D; background: #DCFCE7; }
-      &.center-nav-link { color: #B45309; background: #FEF3C7; }
-      &.admin-link { color: #C46D5B; background: var(--color-primary-light); }
+      &:hover {
+        color: var(--color-primary);
+        background: var(--color-primary-subtle);
+      }
+      &.active {
+        color: var(--color-primary);
+        background: var(--color-primary-subtle);
+        font-weight: 700;
+      }
     }
 
     .header-actions { display: flex; align-items: center; gap: 0.6rem; }

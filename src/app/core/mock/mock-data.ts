@@ -251,6 +251,42 @@ export const MOCK_PROVIDERS: Provider[] = [
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
     specialties: ['جلسة هيدرافيشال ونضارة البشرة الزجاجية (Glass Skin)'],
     bio: 'خبيرة عناية بالبشرة وجلسات الهيدرافيشال والتقشير الكربوني وأجهزة النانو ديرما بن.'
+  },
+  {
+    id: 'ctr-1',
+    user_id: 'usr-center-01',
+    type: 'center',
+    status: 'trusted',
+    display_name: 'L’Étoile Beauty & Spa Lounge',
+    phone: '01055667788',
+    city: 'التجمع الخامس، القاهرة الجديدة',
+    address_line: 'ميدان داون تاون، شارع التسعين الجنوبي، مبنى S2',
+    lat: 30.0194,
+    lng: 31.4385,
+    rating_avg: 4.96,
+    rating_count: 142,
+    is_available: true,
+    avatar_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
+    specialties: ['علاجات الشعر والبروتين', 'جلسات تنظيف وبشرة زجاجية', 'حمام مغربي وسبا'],
+    bio: 'وجهة الجمال والسبا الفاخرة في القاهرة الجديدة. نوفر أحدث أجهزة الهيدرافيشال الأصلية وجلسات الحمام الملكي.'
+  },
+  {
+    id: 'ctr-pending-01',
+    user_id: 'usr-center-02',
+    type: 'center',
+    status: 'pending',
+    display_name: 'صالون روز فيلا بيوتي لاونج (طلب مركز جديد)',
+    phone: '01099887766',
+    city: 'الشيخ زايد، الجيزة',
+    address_line: 'بيفرلي هيلز، مول أركان، مبنى C',
+    lat: 30.0561,
+    lng: 30.9788,
+    rating_avg: 5.0,
+    rating_count: 0,
+    is_available: false,
+    avatar_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
+    specialties: ['علاجات الشعر والبروتين', 'جلسات تنظيف وبشرة زجاجية', 'ميك أب وتسريحات عرايس'],
+    bio: 'طلب انضمام مركز تجميل جديد يقدم خدمات متكاملة للعناية بالشعر والبشرة، يطلب الانضمام لشبكة بيوتي وتفعيل كود الخصم 15% للعميلات.'
   }
 ];
 

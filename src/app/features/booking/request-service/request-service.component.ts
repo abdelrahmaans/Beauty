@@ -42,7 +42,7 @@ import { HOME_CARE_SERVICES } from '../../../core/mock/mock-data';
                   <a routerLink="/login" [queryParams]="{ returnUrl: '/booking/request' }" class="btn-primary btn-micro">
                     <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول
                   </a>
-                  <a routerLink="/signup" class="btn-outline btn-micro">
+                  <a routerLink="/signup" [queryParams]="{ returnUrl: '/booking/request' }" class="btn-outline btn-micro">
                     <i class="fa-solid fa-user-plus"></i> حساب جديد
                   </a>
                 </div>
@@ -215,7 +215,19 @@ import { HOME_CARE_SERVICES } from '../../../core/mock/mock-data';
                   </ul>
                 </div>
 
+                <!-- Guest User: Clear prompt button to login -->
                 <button
+                  *ngIf="!auth.isAuthenticated()"
+                  type="button"
+                  (click)="showLoginModal = true"
+                  class="btn-primary submit-booking-btn auth-prompt-btn"
+                >
+                  <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول لحجز الجلسة
+                </button>
+
+                <!-- Authenticated User: Active booking submission -->
+                <button
+                  *ngIf="auth.isAuthenticated()"
                   (click)="submitBookingRequest()"
                   [disabled]="isSubmitting || !isFormValid()"
                   class="btn-primary submit-booking-btn"
@@ -256,7 +268,7 @@ import { HOME_CARE_SERVICES } from '../../../core/mock/mock-data';
             <a routerLink="/login" [queryParams]="{ returnUrl: '/booking/request' }" class="btn-primary btn-block">
               <i class="fa-solid fa-arrow-right-to-bracket"></i> تسجيل الدخول الآن
             </a>
-            <a routerLink="/signup" class="btn-outline btn-block mt-2">
+            <a routerLink="/signup" [queryParams]="{ returnUrl: '/booking/request' }" class="btn-outline btn-block mt-2">
               <i class="fa-solid fa-user-plus"></i> إنشاء حساب عميلة جديد (مع 50 نقطة ولاء)
             </a>
           </div>

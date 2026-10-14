@@ -35,6 +35,9 @@ import { Banner } from '../../../core/models';
                   <span class="slide-badge announcement" *ngIf="banner.type === 'announcement'">
                     <i class="fa-solid fa-sparkles"></i> إعلان وفعالية خاصة
                   </span>
+                  <span class="slide-badge center" *ngIf="banner.type === 'center'">
+                    <i class="fa-solid fa-store"></i> صالون ومركز معتمد
+                  </span>
 
                   <!-- Code Pill if coupon -->
                   <span class="coupon-code-pill" *ngIf="banner.type === 'coupon' && banner.coupon">

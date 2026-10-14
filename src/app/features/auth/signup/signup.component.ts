@@ -1,6 +1,6 @@
 import { Component, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -336,6 +336,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class SignupComponent {
   auth = inject(AuthService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
 
   fullName: string = '';
@@ -347,6 +348,7 @@ export class SignupComponent {
   isLoading = signal<boolean>(false);
   errorMessage = signal<string>('');
   showConfirmationNotice = signal<boolean>(false);
+  returnUrl: string | null = this.route.snapshot.queryParams['returnUrl'] || null;
 
   async onSubmit(): Promise<void> {
     if (!this.fullName || !this.email || !this.password || !this.phone) return;
@@ -372,6 +374,12 @@ export class SignupComponent {
       if (res.requiresEmailConfirmation) {
         this.showConfirmationNotice.set(true);
         this.cdr.markForCheck();
+        return;
+      }
+
+      // If returnUrl was specified, navigate back to it
+      if (this.returnUrl) {
+        this.router.navigateByUrl(this.returnUrl);
         return;
       }
 

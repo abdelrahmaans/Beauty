@@ -10,7 +10,7 @@ export type PayoutStatus = 'pending' | 'paid';
 export type PointsSource = 'order' | 'booking' | 'redemption' | 'manual';
 export type ReportStatus = 'open' | 'in_review' | 'resolved';
 export type RedemptionStatus = 'claimed' | 'confirmed_by_center' | 'rejected' | 'paid_out';
-export type BannerType = 'coupon' | 'announcement';
+export type BannerType = 'coupon' | 'announcement' | 'center';
 export type BannerPlacement = 'homepage';
 
 export type PaymentReferenceType = 'order' | 'booking';
@@ -306,6 +306,8 @@ export interface Banner {
   cta_link?: string;
   coupon_id?: string | null;
   coupon?: Coupon;
+  center_id?: string | null;
+  center?: Provider;
   is_active: boolean;
   start_at?: string | null;
   end_at?: string | null;

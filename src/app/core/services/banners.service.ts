@@ -76,10 +76,11 @@ export class BannersService {
       title: bannerData.title || '',
       subtitle: bannerData.subtitle || '',
       image_storage_path: bannerData.image_storage_path || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1600&q=80',
-      cta_text: bannerData.cta_text || 'عرض التفاصيل',
-      cta_link: bannerData.cta_link || '/products',
+      cta_text: bannerData.cta_text || (bannerData.type === 'center' ? 'عرض المركز والحجز' : 'عرض التفاصيل'),
+      cta_link: bannerData.cta_link || (bannerData.type === 'center' && bannerData.center_id ? `/centers/${bannerData.center_id}` : '/products'),
       coupon_id: bannerData.coupon_id || null,
       coupon: coupon,
+      center_id: bannerData.center_id || null,
       is_active: bannerData.is_active ?? true,
       start_at: bannerData.start_at || null,
       end_at: bannerData.end_at || null,
@@ -90,7 +91,14 @@ export class BannersService {
     const client = this.supabase.client;
     if (client) {
       try {
-        await client.from('banners').insert([newBanner]);
+        const { coupon, center, id, ...bannerRow } = newBanner as any;
+        const { data: inserted, error } = await client.from('banners').insert([bannerRow]).select().single();
+        if (inserted?.id) {
+          newBanner.id = inserted.id;
+        }
+        if (error) {
+          console.warn('Supabase banner insert note:', error.message);
+        }
       } catch (err) {
         console.warn('Fallback to local storage for banner creation:', err);
       }
@@ -105,14 +113,21 @@ export class BannersService {
     const coupon = updates.coupon_id ? MOCK_COUPONS.find(c => c.id === updates.coupon_id) : undefined;
 
     this._banners.update(list =>
-      list.map(b => (b.id === id ? { ...b, ...updates, coupon: coupon ?? b.coupon, updated_at: new Date().toISOString() } : b))
+      list.map(b => (b.id === id ? {
+        ...b,
+        ...updates,
+        coupon: coupon ?? b.coupon,
+        center_id: updates.center_id !== undefined ? updates.center_id : b.center_id,
+        updated_at: new Date().toISOString()
+      } : b))
     );
     this.saveBanners();
 
     const client = this.supabase.client;
     if (client) {
       try {
-        await client.from('banners').update(updates).eq('id', id);
+        const { coupon, center, ...updatePayload } = updates as any;
+        await client.from('banners').update(updatePayload).eq('id', id);
       } catch (err) {
         console.warn('Fallback to local storage for banner update:', err);
       }

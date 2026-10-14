@@ -19,6 +19,22 @@ export class OrdersService {
     private auth: AuthService
   ) {
     this.loadOrders();
+    this.initRealtime();
+  }
+
+  private initRealtime(): void {
+    const client = this.supabase.client;
+    if (client) {
+      try {
+        client.channel('realtime_orders_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+            this.loadOrders();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime orders subscription note:', e);
+      }
+    }
   }
 
   async loadOrders(): Promise<void> {
@@ -80,12 +96,39 @@ export class OrdersService {
     };
 
     const client = this.supabase.client;
-    if (client) {
+    if (client && currentUser) {
       try {
-        const { data, error } = await client.from('orders').insert([newOrder]).select().single();
+        const orderRow: any = {
+          user_id: currentUser.id,
+          status: 'pending',
+          payment_status: 'unpaid',
+          payment_method: orderPayload.payment_method || 'cash_on_delivery',
+          shipping_address: orderPayload.shipping_address || '',
+          subtotal: orderPayload.subtotal || 0,
+          discount_amount: orderPayload.discount_amount || 0,
+          total_price: orderPayload.total_price || 0
+        };
+        if (orderPayload.shipping_full_name) orderRow.shipping_full_name = orderPayload.shipping_full_name;
+        if (orderPayload.shipping_phone) orderRow.shipping_phone = orderPayload.shipping_phone;
+        if (orderPayload.shipping_city) orderRow.shipping_city = orderPayload.shipping_city;
+        if (orderPayload.shipping_fee) orderRow.shipping_fee = orderPayload.shipping_fee;
+        if (orderPayload.notes) orderRow.notes = orderPayload.notes;
+
+        const { data, error } = await client.from('orders').insert([orderRow]).select().single();
+        if (data?.id) {
+          newOrder.id = data.id;
+          if (orderPayload.items && orderPayload.items.length > 0) {
+            const itemRows = orderPayload.items.map(item => ({
+              order_id: data.id,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              price_at_purchase: item.price_at_purchase
+            }));
+            await client.from('order_items').insert(itemRows);
+          }
+        }
         if (error) {
-          this._isLoading.set(false);
-          return { success: false, error: error.message };
+          console.warn('Orders Supabase insert note:', error.message);
         }
       } catch (e: any) {
         console.warn('Fallback to local storage for order creation:', e);

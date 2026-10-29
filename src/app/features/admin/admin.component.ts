@@ -13,6 +13,7 @@ import { PaymentProofsService } from '../../core/services/payment-proofs.service
 import { AuthService } from '../../core/services/auth.service';
 import { Product, OrderStatus, Coupon, Booking, Provider, BookingStatus, RedemptionStatus, Banner, PaymentProof, Order } from '../../core/models';
 import { MOCK_COUPONS } from '../../core/mock/mock-data';
+import { formatProductImageUrl, DEFAULT_PRODUCT_IMAGE } from '../../core/utils/image.helper';
 
 @Component({
   selector: 'app-admin',
@@ -210,6 +211,31 @@ export class AdminComponent {
     await this.productsService.saveProduct({ ...product, is_active: !product.is_active });
   }
 
+  async toggleProductFeatured(product: Product): Promise<void> {
+    await this.productsService.toggleFeatured(product.id);
+  }
+
+  getBookingCode(id: string): string {
+    if (!id) return '';
+    return id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  }
+
+  getOrderCode(id: string): string {
+    if (!id) return '';
+    return id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  }
+
+  formatImageUrl(url?: string | null): string {
+    return formatProductImageUrl(url);
+  }
+
+  onImgError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target && target.src !== DEFAULT_PRODUCT_IMAGE) {
+      target.src = DEFAULT_PRODUCT_IMAGE;
+    }
+  }
+
   openNewProductModal(): void {
     this.editingProduct = null;
     this.formProduct = {
@@ -221,7 +247,8 @@ export class AdminComponent {
       category_id: this.productsService.categories()[0]?.id || '11111111-1111-1111-1111-111111111101',
       main_image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
       description: '',
-      is_active: true
+      is_active: true,
+      is_featured: true
     };
     this.isModalOpen = true;
   }

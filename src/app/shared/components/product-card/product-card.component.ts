@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Product } from '../../../core/models';
 import { CartService } from '../../../core/services/cart.service';
+import { formatProductImageUrl, DEFAULT_PRODUCT_IMAGE } from '../../../core/utils/image.helper';
 
 @Component({
   selector: 'app-product-card',
@@ -13,7 +14,7 @@ import { CartService } from '../../../core/services/cart.service';
       <!-- Top Image with Badges -->
       <div class="image-wrapper">
         <a [routerLink]="['/products', product.slug]" class="image-link">
-          <img [src]="product.main_image" [alt]="product.name" class="product-img" loading="lazy" />
+          <img [src]="formattedImage" [alt]="product.name" class="product-img" loading="lazy" (error)="onImageError($event)" />
         </a>
 
         <!-- Discount / Best Seller Badges -->
@@ -252,6 +253,17 @@ import { CartService } from '../../../core/services/cart.service';
 export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
   private cart = inject(CartService);
+
+  get formattedImage(): string {
+    return formatProductImageUrl(this.product?.main_image);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target && target.src !== DEFAULT_PRODUCT_IMAGE) {
+      target.src = DEFAULT_PRODUCT_IMAGE;
+    }
+  }
 
   get discountPercentage(): number {
     if (!this.product.discount_price || this.product.discount_price >= this.product.price) {

@@ -688,6 +688,38 @@
   justify-content: space-between;
   align-items: flex-start;
 
+  .s-code-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .s-booking-code {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+    font-family: var(--font-latin), monospace;
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    direction: ltr;
+    display: inline-block;
+    box-shadow: 0 1px 3px rgba(196, 109, 91, 0.12);
+  }
+
+  .s-created-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    i { color: var(--color-primary); }
+    .time-tag { color: var(--color-text-subtle); }
+  }
+
   .s-id {
     font-size: 0.78rem;
     font-weight: 800;
@@ -699,6 +731,18 @@
     font-weight: 900;
     margin: 0.2rem 0 0;
   }
+}
+
+.code-tag {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-family: var(--font-latin), monospace;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  direction: ltr;
+  display: inline-block;
 }
 
 .status-pill {

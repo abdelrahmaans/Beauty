@@ -334,7 +334,14 @@
         <div class="session-card beauty-card" *ngFor="let bk of getFilteredBookings()">
           <div class="s-top-row">
             <div>
-              <span class="s-id">حجز رقم #{{ bk.id }}</span>
+              <div class="s-code-badge-row">
+                <span class="s-booking-code" dir="ltr">#BK-{{ getBookingCode(bk.id) }}</span>
+                <span class="s-created-date">
+                  <i class="fa-regular fa-calendar-check"></i>
+                  {{ bk.created_at | date:'yyyy/MM/dd' }}
+                  <small class="time-tag">• {{ bk.created_at | date:'hh:mm a' }}</small>
+                </span>
+              </div>
               <h4 class="s-service">{{ bk.service_type }}</h4>
             </div>
 
@@ -474,7 +481,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let bk of bookingsService.myProviderBookings()">
-              <td><strong>#{{ bk.id }}</strong></td>
+              <td><strong class="code-tag" dir="ltr">#BK-{{ getBookingCode(bk.id) }}</strong></td>
               <td>{{ bk.service_type }}</td>
               <td>{{ bk.customer_name }}</td>
               <td><strong>{{ bk.agreed_price }} ج.م</strong></td>

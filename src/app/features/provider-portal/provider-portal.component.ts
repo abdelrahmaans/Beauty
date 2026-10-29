@@ -128,6 +128,11 @@ export class ProviderPortalComponent {
     this.closePayoutModal();
   }
 
+  getBookingCode(id: string): string {
+    if (!id) return '';
+    return id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  }
+
   async saveOnboarding(): Promise<void> {
     await this.providersService.registerProvider({
       displayName: this.onboardName,

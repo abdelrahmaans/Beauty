@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ProductsService } from '../../../core/services/products.service';
@@ -130,7 +130,7 @@ import { CartService } from '../../../core/services/cart.service';
 
           <div class="products-grid">
             <app-product-card
-              *ngFor="let product of productsService.featuredProducts()"
+              *ngFor="let product of homeDisplayProducts()"
               [product]="product"
             ></app-product-card>
           </div>
@@ -524,4 +524,10 @@ import { CartService } from '../../../core/services/cart.service';
 export class HomeComponent {
   productsService = inject(ProductsService);
   cart = inject(CartService);
+
+  readonly homeDisplayProducts = computed(() => {
+    const featured = this.productsService.featuredProducts();
+    if (featured.length > 0) return featured;
+    return this.productsService.products().slice(0, 8);
+  });
 }

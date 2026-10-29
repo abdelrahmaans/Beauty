@@ -6,6 +6,7 @@ import { ProductsService } from '../../../core/services/products.service';
 import { CartService } from '../../../core/services/cart.service';
 import { Product } from '../../../core/models';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
+import { formatProductImageUrl, DEFAULT_PRODUCT_IMAGE } from '../../../core/utils/image.helper';
 
 @Component({
   selector: 'app-product-details',
@@ -31,7 +32,7 @@ import { ProductCardComponent } from '../../../shared/components/product-card/pr
             <!-- Product Gallery -->
             <div class="gallery-column">
               <div class="main-image-frame beauty-card">
-                <img [src]="product.main_image" [alt]="product.name" class="main-img" />
+                <img [src]="mainImageUrl" [alt]="product.name" class="main-img" (error)="onImageError($event)" />
                 <span class="discount-tag" *ngIf="discountPercentage > 0">
                   خصم {{ discountPercentage }}%
                 </span>
@@ -571,6 +572,17 @@ export class ProductDetailsComponent implements OnInit {
         this.product = this.productsService.getProductBySlug(slug);
       }
     });
+  }
+
+  get mainImageUrl(): string {
+    return formatProductImageUrl(this.product?.main_image);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target && target.src !== DEFAULT_PRODUCT_IMAGE) {
+      target.src = DEFAULT_PRODUCT_IMAGE;
+    }
   }
 
   get discountPercentage(): number {

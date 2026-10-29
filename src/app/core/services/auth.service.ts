@@ -35,11 +35,21 @@ export class AuthService {
   });
   readonly loyaltyPoints = computed(() => this._profile()?.loyalty_points ?? 0);
 
+  private initPromise: Promise<void> | null = null;
+
+  async ensureInitialized(): Promise<void> {
+    if (this._isInitialized()) return;
+    if (this.initPromise) {
+      await this.initPromise;
+      return;
+    }
+  }
+
   constructor(
     private supabase: SupabaseService,
     private router: Router
   ) {
-    this.initAuth();
+    this.initPromise = this.initAuth();
   }
 
   private async initAuth(): Promise<void> {
@@ -62,20 +72,20 @@ export class AuthService {
       } else {
         const user = sessionData.session.user;
         this._currentUser.set(user);
-        // Load profile and context non-blocking
-        this.loadProfile(user.id);
-        this.getDashboardContext();
+        // Load profile and context strictly before finishing initialization
+        await this.loadProfile(user.id);
+        await this.getDashboardContext();
       }
 
       // Subscribe to auth state changes for the session lifetime
       client.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
         if (session?.user) {
           this._currentUser.set(session.user);
-          this.loadProfile(session.user.id);
+          await this.loadProfile(session.user.id);
           // Invalidate cached context on every auth change so it's always fresh
           this._dashboardContext.set(null);
           localStorage.removeItem('beauty_active_context');
-          this.getDashboardContext();
+          await this.getDashboardContext();
         } else {
           // Sign out or session expiry → wipe everything
           this._currentUser.set(null);
@@ -87,9 +97,9 @@ export class AuthService {
     } catch (err) {
       console.warn('[AuthService] initAuth error:', err);
       this.clearLocalStorage();
+    } finally {
+      this._isInitialized.set(true);
     }
-
-    this._isInitialized.set(true);
   }
 
   private clearLocalStorage(): void {
@@ -110,12 +120,18 @@ export class AuthService {
         timeout
       ]);
 
+      const userMeta = this._currentUser()?.user_metadata || {};
+
       if (data && !error) {
-        this._profile.set(data as Profile);
-        localStorage.setItem('beauty_active_user', JSON.stringify(data));
+        const profileObj = { ...data } as Profile;
+        // Prioritize user_metadata role if admin or specific role is set
+        if (userMeta['role'] && userMeta['role'] !== profileObj.role) {
+          profileObj.role = userMeta['role'] as UserRole;
+        }
+        this._profile.set(profileObj);
+        localStorage.setItem('beauty_active_user', JSON.stringify(profileObj));
       } else {
         // Automatically repair profile from user metadata if trigger hasn't run
-        const userMeta = this._currentUser()?.user_metadata || {};
         const repairedProfile: Profile = {
           id: userId,
           full_name: userMeta['full_name'] || this._currentUser()?.email?.split('@')[0] || 'عميلة المتجر',
@@ -157,13 +173,26 @@ export class AuthService {
       return null;
     }
 
+    const user = this._currentUser()!;
+    const userId = user.id;
+
+    // Fast check: If role in user_metadata or loaded profile is admin, IMMEDIATELY return admin context
+    if (user.user_metadata?.['role'] === 'admin' || this._profile()?.role === 'admin') {
+      const ctx: UserDashboardContext = { view: 'admin', status: 'verified' };
+      this._dashboardContext.set(ctx);
+      localStorage.setItem('beauty_active_context', JSON.stringify(ctx));
+      return ctx;
+    }
+
     // Fast path: use localStorage cache only if we have a confirmed real user
     const saved = localStorage.getItem('beauty_active_context');
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as UserDashboardContext;
-        this._dashboardContext.set(parsed);
-        return parsed;
+        if (parsed.view !== 'customer' || !user.user_metadata?.['role'] || user.user_metadata?.['role'] === 'customer') {
+          this._dashboardContext.set(parsed);
+          return parsed;
+        }
       } catch {
         localStorage.removeItem('beauty_active_context');
       }
@@ -171,8 +200,6 @@ export class AuthService {
 
     const client = this.supabase.client;
     if (!client) return null;
-
-    const userId = this._currentUser()!.id;
 
     // Try the RPC function first (preferred — single DB round-trip)
     try {
@@ -195,8 +222,20 @@ export class AuthService {
     }
 
     // Direct fallback: check profile role then providers table
-    const currentProfile = this._profile();
-    if (currentProfile?.role === 'admin') {
+    let currentProfile = this._profile();
+    if (!currentProfile) {
+      try {
+        const { data: pData } = await client.from('profiles').select('*').eq('id', userId).maybeSingle();
+        if (pData) {
+          currentProfile = pData as Profile;
+          this._profile.set(currentProfile);
+        }
+      } catch (e) {
+        console.warn('Profile fetch fallback failed:', e);
+      }
+    }
+
+    if (currentProfile?.role === 'admin' || user.user_metadata?.['role'] === 'admin') {
       const ctx: UserDashboardContext = { view: 'admin', status: 'verified' };
       this._dashboardContext.set(ctx);
       localStorage.setItem('beauty_active_context', JSON.stringify(ctx));
@@ -222,6 +261,19 @@ export class AuthService {
       }
     } catch (err) {
       console.warn('[AuthService] providers lookup failed:', err);
+    }
+
+    if (user.user_metadata?.['role'] === 'specialist') {
+      const ctx: UserDashboardContext = { view: 'provider', status: 'verified' };
+      this._dashboardContext.set(ctx);
+      localStorage.setItem('beauty_active_context', JSON.stringify(ctx));
+      return ctx;
+    }
+    if (user.user_metadata?.['role'] === 'center') {
+      const ctx: UserDashboardContext = { view: 'center', status: 'verified' };
+      this._dashboardContext.set(ctx);
+      localStorage.setItem('beauty_active_context', JSON.stringify(ctx));
+      return ctx;
     }
 
     // Final fallback: customer context

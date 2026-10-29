@@ -393,7 +393,7 @@
           <div class="stream-list">
             <div class="stream-item" *ngFor="let ord of ordersService.orders().slice(0, 4)">
               <div class="si-info">
-                <strong>#{{ ord.id }} — {{ ord.shipping_full_name }}</strong>
+                <strong><span dir="ltr">#ORD-{{ getOrderCode(ord.id) }}</span> — {{ ord.shipping_full_name }}</strong>
                 <small>{{ ord.shipping_city }} • {{ ord.total_price }} ج.م</small>
               </div>
               <span class="status-badge" [ngClass]="'status-' + ord.status">{{ getOrderStatusArabic(ord.status) }}</span>
@@ -466,7 +466,7 @@
           <tbody>
             <tr *ngFor="let ord of getFilteredOrders()">
               <td>
-                <strong>#{{ ord.id }}</strong>
+                <strong class="order-code-tag" dir="ltr">#ORD-{{ getOrderCode(ord.id) }}</strong>
                 <small class="d-block text-muted">{{ ord.created_at | date:'mediumDate' }}</small>
               </td>
               <td>
@@ -546,7 +546,14 @@
         >
           <div class="q-top">
             <div class="q-client-box">
-              <span class="q-id">طلب رقم #{{ bk.id }}</span>
+              <div class="q-code-badge-row">
+                <span class="q-booking-code" dir="ltr">#BK-{{ getBookingCode(bk.id) }}</span>
+                <span class="q-created-date">
+                  <i class="fa-regular fa-calendar-check"></i>
+                  {{ bk.created_at | date:'yyyy/MM/dd' }}
+                  <small class="time-tag">• {{ bk.created_at | date:'hh:mm a' }}</small>
+                </span>
+              </div>
               <h4 class="q-srv">{{ bk.service_type }}</h4>
               <div class="q-meta">
                 <span><i class="fa-solid fa-user"></i> {{ bk.customer_name }}</span>
@@ -771,7 +778,7 @@
             <tr *ngFor="let prod of getAdminFilteredProducts()">
               <td>
                 <div class="table-product-cell">
-                  <img [src]="prod.main_image" [alt]="prod.name" class="t-thumb" />
+                  <img [src]="formatImageUrl(prod.main_image)" [alt]="prod.name" class="t-thumb" (error)="onImgError($event)" />
                   <div>
                     <strong>{{ prod.name }}</strong>
                     <small class="text-muted d-block">{{ prod.brand }} • {{ prod.sku }}</small>
@@ -819,6 +826,14 @@
               </td>
               <td>
                 <div class="row-actions">
+                  <button
+                    (click)="toggleProductFeatured(prod)"
+                    class="action-icon star-btn"
+                    [class.is-featured]="prod.is_featured"
+                    [title]="prod.is_featured ? 'معروض في قسم المميز بالرئيسية (اضغطي للإلغاء)' : 'تمييز في واجهة المتجر الرئيسية'"
+                  >
+                    <i [ngClass]="prod.is_featured ? 'fa-solid fa-star text-gold' : 'fa-regular fa-star text-muted'"></i>
+                  </button>
                   <button (click)="openEditProductModal(prod)" class="action-icon edit" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button (click)="deleteProduct(prod.id)" class="action-icon delete" title="حذف"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
@@ -1151,7 +1166,20 @@
 
         <div class="form-group full-width">
           <label>رابط صورة المنتج (Image URL) <span class="req">*</span></label>
-          <input type="text" [(ngModel)]="formProduct.main_image" class="input-custom" dir="ltr" />
+          <input type="text" [(ngModel)]="formProduct.main_image" class="input-custom" dir="ltr" placeholder="https://... أو رابط Google Drive" />
+          <small class="text-muted d-block mt-1">
+            <i class="fa-brands fa-google-drive text-primary"></i> يدعم روابط Google Drive (مثل drive.google.com/file/d/...) ويتم تحويلها لروابط صور مباشرة تلقائياً.
+          </small>
+          <div *ngIf="formProduct.main_image" class="modal-preview-box mt-2">
+            <img [src]="formatImageUrl(formProduct.main_image)" class="modal-preview-thumb" (error)="onImgError($event)" alt="معاينة الصورة" />
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label class="custom-checkbox-featured">
+            <input type="checkbox" [(ngModel)]="formProduct.is_featured" />
+            <span class="chk-label"><i class="fa-solid fa-star text-gold"></i> عرض في قسم المنتجات المميزة بواجهة المتجر الرئيسية (الأكثر طلباً)</span>
+          </label>
         </div>
 
         <div class="form-group full-width">

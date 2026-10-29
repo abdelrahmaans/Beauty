@@ -8,6 +8,9 @@ export const roleGuard = (allowedViews: string[]): CanActivateFn => {
     const auth = inject(AuthService);
     const router = inject(Router);
 
+    // Ensure auth state and profile have resolved before checking credentials
+    await auth.ensureInitialized();
+
     if (!auth.isAuthenticated()) {
       router.navigate(['/login']);
       return false;
@@ -53,9 +56,10 @@ export const roleGuard = (allowedViews: string[]): CanActivateFn => {
   };
 };
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  await auth.ensureInitialized();
   if (auth.isAuthenticated()) return true;
   router.navigate(['/login']);
   return false;

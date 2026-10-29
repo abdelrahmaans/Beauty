@@ -2,6 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { Product, Category } from '../models';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '../mock/mock-data';
+import { formatProductImageUrl } from '../utils/image.helper';
 
 @Injectable({
   providedIn: 'root'
@@ -112,7 +113,11 @@ export class ProductsService {
         }
 
         if (prodsRes.data && prodsRes.data.length > 0) {
-          this._products.set(prodsRes.data);
+          const sanitized = prodsRes.data.map((p: Product) => ({
+            ...p,
+            main_image: formatProductImageUrl(p.main_image)
+          }));
+          this._products.set(sanitized);
         } else {
           this._products.set(MOCK_PRODUCTS);
         }
@@ -169,6 +174,7 @@ export class ProductsService {
       saved = {
         ...existing,
         ...product,
+        main_image: product.main_image ? formatProductImageUrl(product.main_image) : existing.main_image,
         updated_at: new Date().toISOString()
       };
 
@@ -184,6 +190,7 @@ export class ProductsService {
     } else {
       // Create new
       const newId = 'prod-' + Date.now();
+      const formattedImg = formatProductImageUrl(product.main_image);
       saved = {
         id: newId,
         name: product.name || 'منتج جديد',
@@ -198,10 +205,10 @@ export class ProductsService {
         stock_quantity: Number(product.stock_quantity) || 10,
         sku: product.sku || ('SKU-' + Date.now()),
         is_active: product.is_active ?? true,
-        is_featured: product.is_featured ?? false,
+        is_featured: product.is_featured ?? true,
         rating_avg: 5.0,
         reviews_count: 0,
-        main_image: product.main_image || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+        main_image: formattedImg,
         category_id: product.category_id,
         category: this._categories().find(c => c.id === product.category_id),
         created_at: new Date().toISOString()
@@ -223,6 +230,19 @@ export class ProductsService {
 
     localStorage.setItem('beauty_custom_products', JSON.stringify(this._products()));
     return { success: true, product: saved };
+  }
+
+  async toggleFeatured(productId: string): Promise<boolean> {
+    const prod = this.getProductById(productId);
+    if (!prod) return false;
+    const newFeatured = !prod.is_featured;
+    const client = this.supabase.client;
+    if (client) {
+      await client.from('products').update({ is_featured: newFeatured }).eq('id', productId);
+    }
+    this._products.update(list => list.map(p => p.id === productId ? { ...p, is_featured: newFeatured } : p));
+    localStorage.setItem('beauty_custom_products', JSON.stringify(this._products()));
+    return true;
   }
 
   async deleteProduct(productId: string): Promise<boolean> {
